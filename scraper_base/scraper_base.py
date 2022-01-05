@@ -71,9 +71,9 @@ class ScraperBase:
         self.playwright = playwright
 
         browser = browser.lower()
-        if self.browser == "firefox":
+        if browser == "firefox":
             self.browser = self.playwright.firefox.launch(headless=self.headless)
-        elif self.browser == "chromium":
+        elif browser == "chromium":
             self.browser = self.playwright.chromium.launch(headless=self.headless)
         else:
             raise KeyError(f"{browser} is not a valid broswer. Possible browsers: {self.BROSWERS}")
