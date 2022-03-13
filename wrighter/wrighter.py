@@ -53,7 +53,7 @@ class PlaywrightSettings:
         return asdict(self)
 
 
-class WrightCore:
+class Wrighter:
     BROSWERS = ["firefox", "chromium", "webkit"]
 
     def __init__(self,
