@@ -6,23 +6,12 @@ import os
 import random
 from dataclasses import asdict, dataclass
 from time import sleep, time
-
+import re
+from bs4 import BeautifulSoup
+from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
-from playwright.sync_api import Playwright, sync_playwright
-
-
-def assert_path_exits(path: str):
-    if not os.path.exists(path):
-        raise FileNotFoundError(path)
-
-
-def json_dump(filepath: str, data: dict):
-    with open(filepath, 'w') as fp:
-        json.dump(data, fp, indent=4)
-
-
-def date_today_str(fmt: str = "dmY", delim: str = "/") -> str:
-    return datetime.date.today().strftime(f"%{fmt[0]}{delim}%{fmt[1]}{delim}%{fmt[2]}")
+from playwright.sync_api import Browser, Playwright, sync_playwright
+from wrighter.utils import assert_path_exits, json_dump, date_now_str
 
 
 @dataclass()
@@ -58,25 +47,15 @@ class Wrighter:
 
     def __init__(self,
                  playwright: Playwright,
-                 save_directory: str,
+                 scraper_data_directory: str,
                  headless: bool = False,
                  settings: PlaywrightSettings = None,
-                 delay: tuple = (2, 5),
-                 browser: str = "firefox") -> None:
-        self.save_directory = save_directory
+                 sleep_duration: tuple = (2, 5),
+                 browser: str = "chromium") -> None:
+        self.playwright = playwright
         self.headless = headless
         self.settings = settings
-        self.delay_min = delay[0]
-        self.delay_max = delay[1]
-        self.playwright = playwright
-
-        browser = browser.lower()
-        if browser == "firefox":
-            self.browser = self.playwright.firefox.launch(headless=self.headless)
-        elif browser == "chromium":
-            self.browser = self.playwright.chromium.launch(headless=self.headless)
-        else:
-            raise KeyError(f"{browser} is not a valid broswer. Possible browsers: {self.BROSWERS}")
+        self.browser = self.__launch_browser(browser=browser)
 
         if self.settings is not None:
             self.context = self.browser.new_context(**settings.to_dict())
@@ -86,8 +65,24 @@ class Wrighter:
         self.page = self.context.new_page()
         self.data: list = []
 
-        assert_path_exits(self.save_directory)
-        assert self.delay_min < self.delay_max, delay
+        self.scraper_data_directory = scraper_data_directory
+        assert_path_exits(self.scraper_data_directory)
+
+        self.sleep_min = sleep_duration[0]
+        self.sleep_max = sleep_duration[1]
+        if not self.sleep_min < self.sleep_max:
+            raise ValueError(f"Incorrect sleep settings. {self.sleep_min=}, {self.sleep_max=}")
+
+    def __launch_browser(self, browser: str):
+        browser = browser.lower()
+        if browser not in self.BROSWERS:
+            raise KeyError(f"{browser} is not a valid broswer. Options: {self.BROSWERS}")
+        if browser == "firefox":
+            return self.playwright.firefox.launch(headless=self.headless)
+        elif browser == "chromium":
+            return self.playwright.chromium.launch(headless=self.headless)
+        elif browser == "webkit":
+            return self.playwright.webkit.launch(headless=self.headless)
 
     def __enter__(self):
         return self
@@ -96,34 +91,64 @@ class Wrighter:
         self.context.close()
         self.browser.close()
 
-    def wait(self):
-        t = random.randint(self.delay_min, self.delay_max - 1) + random.random()
+    def stop(self):
+        self.__exit__()
+
+    def sleep(self, t=None, x=1):
+        """
+        t: sleep for t seconds.
+        x: sleep for [min,max] seconds x times.
+        """
+        if t is None:
+            w = []
+            for _ in range(x):
+                t = random.randint(self.sleep_min, self.sleep_max - 1) + random.random()
+                w.append(t)
+            t = sum(w)
+        LOG.info(f"Sleeping for {round(t,2)}s")
         sleep(t)
 
     def load_page(self, url: str):
+        """Got to url, wait for page to load, return its HTML"""
         self.page.goto(url)
         self.page.wait_for_load_state()
         return self.page.content()
 
-    def get_default_save_fname(self):
-        return self.save_directory + os.sep + "data_" + date_today_str(delim="-") + f".json"
+    def find_links(self, html: str):
+        """Find all links inside HTML"""
+        pattern = re.compile(r"^(https:\/\/|www\..+\..+)")
+        soup = BeautifulSoup(html, "html.parser")
+        links = []
+        for link in soup.findAll('a', attrs={'href': pattern}):
+            links.append(link)
+        links = list(set(links))
+        return links
 
-    def save_data_to_json(self, fname: str = None):
+    def save_session_storage(self):
+        self.context.storage_state(path=self.settings.storage_state)
+        LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
+
+    def default_data_save_path(self):
+        return self.scraper_data_directory + os.sep + "data_" + date_now_str(delim="-") + f".json"
+
+    def data_save_to_json(self, path: str = None):
         if len(self.data) == 0 or self.data is None:
             print("No data to save.")
             return False
-        if fname is not None:
-            assert_path_exits(os.path.basename(fname))
-            save_path = fname
+
+        if path is not None:
+            assert_path_exits(os.path.basename(path))
+            save_path = path
         else:
-            save_path = self.get_default_save_fname()
-        data = [i.to_dict() for i in self.data]
-        json_dump(save_path, data)
+            save_path = self.default_data_save_path()
+            LOG.info(f"Saving data to default save path ({save_path})")
+
+        json_dump(save_path, self.data)
         return True
 
     def run(self):
         """Write your scraper logic here."""
-        raise NotImplementedError
+        raise NotImplementedError("Write your scraper logic here.")
 
     @classmethod
     def new(cls,
@@ -131,7 +156,7 @@ class Wrighter:
             headless: bool = False,
             settings: PlaywrightSettings = None,
             delay: tuple = (2, 5),
-            browser: str = "firefox",
+            browser: str = "chromium",
             args: dict = None):
         with sync_playwright() as playwrght:
             with cls(playwrght, save_directory, headless=headless, settings=settings, delay=delay,
