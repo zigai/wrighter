@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import datetime
-import json
 import os
 import random
-from dataclasses import asdict, dataclass
-from time import sleep, time
 import re
+from dataclasses import asdict, dataclass
+from time import sleep
+
 from bs4 import BeautifulSoup
 from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
 from playwright.sync_api import Browser, Playwright, sync_playwright
-from wrighter.utils import assert_path_exits, json_dump, date_now_str
+
+from stdl.fs import assert_paths_exist, json_dump
+from stdl.datetime_utils import Date
 
 
 @dataclass()
@@ -66,7 +67,7 @@ class Wrighter:
         self.data: list = []
 
         self.scraper_data_directory = scraper_data_directory
-        assert_path_exits(self.scraper_data_directory)
+        assert_paths_exist(self.scraper_data_directory)
 
         self.sleep_min = sleep_duration[0]
         self.sleep_max = sleep_duration[1]
@@ -129,15 +130,15 @@ class Wrighter:
         LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
 
     def default_data_save_path(self):
-        return self.scraper_data_directory + os.sep + "data_" + date_now_str(delim="-") + f".json"
+        return self.scraper_data_directory + os.sep + "data_" + Date.today_str(sep="-") + f".json"
 
-    def data_save_to_json(self, path: str = None):
+    def save_data_to_json(self, path: str = None):
         if len(self.data) == 0 or self.data is None:
             print("No data to save.")
             return False
 
         if path is not None:
-            assert_path_exits(os.path.basename(path))
+            assert_paths_exist(os.path.basename(path))
             save_path = path
         else:
             save_path = self.default_data_save_path()
