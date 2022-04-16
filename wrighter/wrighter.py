@@ -10,9 +10,8 @@ from bs4 import BeautifulSoup
 from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
 from playwright.sync_api import Browser, Playwright, sync_playwright
-
-from stdl.fs import assert_paths_exist, json_dump
 from stdl.datetime_utils import Date
+from stdl.fs import assert_paths_exist, json_dump
 
 
 @dataclass()
@@ -160,7 +159,11 @@ class Wrighter:
             browser: str = "chromium",
             args: dict = None):
         with sync_playwright() as playwrght:
-            with cls(playwrght, save_directory, headless=headless, settings=settings, delay=delay,
+            with cls(playwrght,
+                     save_directory,
+                     headless=headless,
+                     settings=settings,
+                     delay=delay,
                      browser=browser) as s:
                 if args is not None:
                     s.run(**args)
