@@ -1,2 +1,2 @@
 playwright==1.17.2
-stdl==0.0.2
+stdl==0.1.3

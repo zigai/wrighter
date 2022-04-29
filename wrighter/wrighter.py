@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
 from playwright.sync_api import Browser, Playwright, sync_playwright
-from stdl.datetime_utils import Date
+from stdl.datetime_util import Date
 from stdl.fs import assert_paths_exist, json_dump
 
 
@@ -73,7 +73,7 @@ class Wrighter:
         if not self.sleep_min < self.sleep_max:
             raise ValueError(f"Incorrect sleep settings. {self.sleep_min=}, {self.sleep_max=}")
 
-    def __launch_browser(self, browser: str):
+    def __launch_browser(self, browser: str) -> Browser:
         browser = browser.lower()
         if browser not in self.BROSWERS:
             raise KeyError(f"{browser} is not a valid broswer. Options: {self.BROSWERS}")
@@ -129,7 +129,8 @@ class Wrighter:
         LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
 
     def default_data_save_path(self):
-        return self.scraper_data_directory + os.sep + "data_" + Date.today_str(sep="-") + f".json"
+        return self.scraper_data_directory + os.sep + "data_" + Date.today_as_str(
+            sep="-") + f".json"
 
     def save_data_to_json(self, path: str = None):
         if len(self.data) == 0 or self.data is None:
