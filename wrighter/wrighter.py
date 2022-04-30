@@ -3,15 +3,16 @@ from __future__ import annotations
 import os
 import random
 import re
+import time
 from dataclasses import asdict, dataclass
-from time import sleep
 
 from bs4 import BeautifulSoup
 from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
-from playwright.sync_api import Browser, Playwright, sync_playwright
-from stdl.datetime_util import Date
-from stdl.fs import assert_paths_exist, json_dump
+from playwright.sync_api import (Browser, BrowserContext, Page, Playwright, sync_playwright)
+from playwright_stealth import stealth_sync
+from stdl import fs
+from stdl.datetime_util import DateTime
 
 
 @dataclass()
@@ -38,45 +39,51 @@ class PlaywrightSettings:
     def get_random():
         raise NotImplementedError
 
-    def to_dict(self):
+    def dict(self):
         return asdict(self)
 
 
 class Wrighter:
-    BROSWERS = ["firefox", "chromium", "webkit"]
+    BROWSERS = ["firefox", "chromium", "webkit"]
 
     def __init__(self,
                  playwright: Playwright,
-                 scraper_data_directory: str,
+                 data_dir: str,
                  headless: bool = False,
-                 settings: PlaywrightSettings = None,
-                 sleep_duration: tuple = (2, 5),
+                 settings: PlaywrightSettings | None = None,
+                 stealth: bool = True,
                  browser: str = "chromium") -> None:
         self.playwright = playwright
         self.headless = headless
         self.settings = settings
-        self.browser = self.__launch_browser(browser=browser)
+        self.stealth = stealth
+        self.data_dir = data_dir
+        self.browser_driver = browser
+        fs.assert_paths_exist(self.data_dir)
 
-        if self.settings is not None:
-            self.context = self.browser.new_context(**settings.to_dict())
-        else:
-            self.context = self.browser.new_context()
+        self.browser: Browser = self.__get_browser(browser=self.browser_driver)
+        self.context: BrowserContext = self.__get_context(settings=self.settings)
+        self.page: Page = self.new_tab()
 
-        self.page = self.context.new_page()
         self.data: list = []
 
-        self.scraper_data_directory = scraper_data_directory
-        assert_paths_exist(self.scraper_data_directory)
+    def new_tab(self) -> Page:
+        page = self.context.new_page()
+        if self.stealth:
+            stealth_sync(page)
+        return page
 
-        self.sleep_min = sleep_duration[0]
-        self.sleep_max = sleep_duration[1]
-        if not self.sleep_min < self.sleep_max:
-            raise ValueError(f"Incorrect sleep settings. {self.sleep_min=}, {self.sleep_max=}")
+    def __get_context(self, settings: PlaywrightSettings | None) -> BrowserContext:
+        if settings is not None:
+            context = self.browser.new_context(**settings.dict())
+        else:
+            context = self.browser.new_context()
+        return context
 
-    def __launch_browser(self, browser: str) -> Browser:
+    def __get_browser(self, browser: str) -> Browser:
         browser = browser.lower()
-        if browser not in self.BROSWERS:
-            raise KeyError(f"{browser} is not a valid broswer. Options: {self.BROSWERS}")
+        if browser not in self.BROWSERS:
+            raise KeyError(f"{browser} is not a valid broswer. Options: {self.BROWSERS}")
         if browser == "firefox":
             return self.playwright.firefox.launch(headless=self.headless)
         elif browser == "chromium":
@@ -91,22 +98,18 @@ class Wrighter:
         self.context.close()
         self.browser.close()
 
-    def stop(self):
-        self.__exit__()
+    def sleep_for(self, seconds: float):
+        LOG.info(f"Sleeping for {round(seconds,2)}s")
+        time.sleep(seconds)
 
-    def sleep(self, t=None, x=1):
-        """
-        t: sleep for t seconds.
-        x: sleep for [min,max] seconds x times.
-        """
-        if t is None:
-            w = []
-            for _ in range(x):
-                t = random.randint(self.sleep_min, self.sleep_max - 1) + random.random()
-                w.append(t)
-            t = sum(w)
-        LOG.info(f"Sleeping for {round(t,2)}s")
-        sleep(t)
+    def sleep_for_range(self, sleep_min: int, sleep_max: int):
+        """Sleep for a random amount of seconds between sleep_min and sleep_max"""
+        if not sleep_min < sleep_max:
+            raise ValueError(
+                f"Minimum sleep time value higher that maximum. {sleep_min=}, {sleep_max=}")
+        seconds = random.randint(sleep_min, sleep_max - 1) + random.random()
+        LOG.info(f"Sleeping for {round(seconds,2)}s")
+        time.sleep(seconds)
 
     def load_page(self, url: str):
         """Got to url, wait for page to load, return its HTML"""
@@ -114,8 +117,8 @@ class Wrighter:
         self.page.wait_for_load_state()
         return self.page.content()
 
-    def find_links(self, html: str):
-        """Find all links inside HTML"""
+    def find_urls(self, html: str):
+        """Find all urls inside HTML"""
         pattern = re.compile(r"^(https:\/\/|www\..+\..+)")
         soup = BeautifulSoup(html, "html.parser")
         links = []
@@ -124,53 +127,50 @@ class Wrighter:
         links = list(set(links))
         return links
 
-    def save_session_storage(self):
-        self.context.storage_state(path=self.settings.storage_state)
-        LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
+    def save_session_storage(self, path: str | None = None):
+        if path is not None:
+            self.context.storage_state(path=path)
+            LOG.info(f"Session storage saved to '{path}'")
+        elif self.settings is not None:
+            if self.settings.storage_state is not None:
+                self.context.storage_state(path=self.settings.storage_state)
+                LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
+        else:
+            raise TypeError(
+                "Don't know to where should  session data be saved to. Pass the path to this method call or define 'storage_state' in PlaywrightSettings."
+            )
 
-    def default_data_save_path(self):
-        return self.scraper_data_directory + os.sep + "data_" + Date.today_as_str(
-            sep="-") + f".json"
+    def __get_data_outpath(self):
+        datetime = DateTime.from_timestamp_as_str(time.time(), date_sep="-", time_sep="-")
+        datetime = datetime.replace(", ", ".")
+        return self.data_dir + os.sep + "data_" + datetime + f".json"
 
-    def save_data_to_json(self, path: str = None):
+    def data_dump_to_json(self, path: str | None = None):
         if len(self.data) == 0 or self.data is None:
             print("No data to save.")
             return False
 
         if path is not None:
-            assert_paths_exist(os.path.basename(path))
+            fs.assert_paths_exist(os.path.dirname(path))
             save_path = path
         else:
-            save_path = self.default_data_save_path()
+            save_path = self.__get_data_outpath()
             LOG.info(f"Saving data to default save path ({save_path})")
 
-        json_dump(save_path, self.data)
+        fs.json_dump(save_path, self.data)
         return True
+
+    def print_config(self):
+        """Print the configuration of Wrighter instance"""
+        print(f"{self.headless=}")
+        print(f"{self.data_dir}")
+        print(f"{self.stealth}")
+        print(f"{self.browser_driver}")
+        if self.settings is not None:
+            for key, val in self.settings.dict().items():
+                if val is not None:
+                    print(f"{key}:{val}")
 
     def run(self):
         """Write your scraper logic here."""
         raise NotImplementedError("Write your scraper logic here.")
-
-    @classmethod
-    def new(cls,
-            save_directory: str,
-            headless: bool = False,
-            settings: PlaywrightSettings = None,
-            delay: tuple = (2, 5),
-            browser: str = "chromium",
-            args: dict = None):
-        with sync_playwright() as playwrght:
-            with cls(playwrght,
-                     save_directory,
-                     headless=headless,
-                     settings=settings,
-                     delay=delay,
-                     browser=browser) as s:
-                if args is not None:
-                    s.run(**args)
-                else:
-                    s.run()
-
-
-if __name__ == '__main__':
-    pass
