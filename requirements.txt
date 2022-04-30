@@ -1,2 +1,3 @@
-playwright==1.17.2
+playwright==1.21.0
 stdl==0.1.3
+playwright-stealth==1.0.5
