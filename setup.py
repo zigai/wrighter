@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(name="wrighter",
-      version="0.0.2",
+      version="0.1.3",
       description="Quickly build web scrapers with Playwright",
       long_description=README,
       long_description_content_type="text/markdown",
@@ -24,4 +24,5 @@ setup(name="wrighter",
           "Topic :: Software Development :: Libraries :: Python Modules",
       ],
       packages=find_packages(),
+      package_dir={'wrighter': 'wrighter'},
       install_requires=REQUIREMENTS)
