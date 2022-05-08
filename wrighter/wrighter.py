@@ -103,6 +103,9 @@ class Wrighter:
         return links
 
     def save_session_storage(self, path: str | None = None):
+        """
+        Save the browsers session as a json file. Pass the save path to this method call or define 'storage_state' in PlaywrightSettings.
+        """
         if path is not None:
             self.context.storage_state(path=path)
             LOG.info(f"Session storage saved to '{path}'")
@@ -110,17 +113,20 @@ class Wrighter:
             if self.settings.storage_state is not None:
                 self.context.storage_state(path=self.settings.storage_state)
                 LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
+            else:
+                ...
         else:
             raise TypeError(
-                "Don't know to where should  session data be saved to. Pass the path to this method call or define 'storage_state' in PlaywrightSettings."
+                "Pass the save path to this method call or define 'storage_state' in PlaywrightSettings."
             )
 
-    def __get_data_outpath(self):
+    def __get_default_data_save_path(self):
         datetime = DateTime.from_timestamp_as_str(time.time(), date_sep="-", time_sep="-")
         datetime = datetime.replace(", ", ".")
-        return self.data_dir + os.sep + "data_" + datetime + f".json"
+        return f"{self.data_dir}{os.sep}{datetime}_data.json"
 
-    def data_dump_to_json(self, path: str | None = None):
+    def dump_data_to_json(self, path: str | None = None):
+        """Save the scraped data to a json file."""
         if len(self.data) == 0 or self.data is None:
             LOG.warning("No data to save.")
             return False
@@ -129,7 +135,7 @@ class Wrighter:
             fs.assert_paths_exist(os.path.dirname(path))
             save_path = path
         else:
-            save_path = self.__get_data_outpath()
+            save_path = self.__get_default_data_save_path()
             LOG.info(f"Saving data to default save path ({save_path})")
 
         fs.json_dump(save_path, self.data)
@@ -142,10 +148,7 @@ class Wrighter:
         print(f"Driver: {self.browser_driver}")
         print(f"Data directory: {self.data_dir}")
         if self.settings is not None:
-            for key, val in self.settings.dict.items():
-                if val is not None:
-                    key = key.capitalize().replace("_", " ")
-                    print(f"{key}: {val}")
+            self.settings.print()
 
     def run(self):
         """Write your scraper logic here."""
