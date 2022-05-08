@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dathas import Dathas, dataclass
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
 
@@ -25,3 +27,9 @@ class PlaywrightSettings(Dathas):
     @staticmethod
     def get_random():
         raise NotImplementedError
+
+    def print(self):
+        for key, val in self.dict.items():
+            if val is not None:
+                key = key.capitalize().replace("_", " ")
+                print(f"{key}: {val}")
