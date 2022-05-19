@@ -8,6 +8,7 @@ import time
 from bs4 import BeautifulSoup
 from loguru import logger as LOG
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
+from playwright.async_api import async_playwright
 from playwright.sync_api import (Browser, BrowserContext, Page, Playwright, Response,
                                  sync_playwright)
 from playwright_stealth import stealth_sync
