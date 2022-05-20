@@ -1,3 +1,8 @@
+beautifulsoup4==4.11.1
+dathas==0.0.3
+loguru==0.5.3
 playwright==1.21.0
+playwright_stealth==1.0.5
+setuptools==59.6.0
 stdl==0.1.4
-playwright-stealth==1.0.5
+user_agent==0.1.10
