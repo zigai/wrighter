@@ -59,7 +59,7 @@ class Wrighter:
     def __get_browser(self, browser: str) -> Browser:
         browser = browser.lower()
         if browser not in self.BROWSERS:
-            raise KeyError(f"{browser} is not a valid broswer. Options: {self.BROWSERS}")
+            raise ValueError(f"{browser} is not a valid broswer. Options: {self.BROWSERS}")
         if browser == "firefox":
             return self.playwright.firefox.launch(headless=self.headless)
         elif browser == "chromium":
@@ -75,7 +75,7 @@ class Wrighter:
         self.browser.close()
 
     def sleep_for(self, seconds: float):
-        LOG.info(f"Sleeping for {round(seconds,2)}s")
+        LOG.debug(f"Sleeping for {round(seconds,2)}s")
         time.sleep(seconds)
 
     def sleep_for_range(self, seconds_min: float, seconds_max: float):
@@ -84,7 +84,7 @@ class Wrighter:
             raise ValueError(
                 f"Minimum sleep time value higher that maximum. {seconds_min=}, {seconds_max=}")
         seconds = random.uniform(seconds_min, seconds_max)
-        LOG.info(f"Sleeping for {round(seconds,2)}s")
+        LOG.debug(f"Sleeping for {round(seconds,2)}s")
         time.sleep(seconds)
 
     def load_page(self, url: str):
@@ -97,11 +97,8 @@ class Wrighter:
         """Find all urls inside HTML"""
         URL_PATTERN = re.compile(r"^(https:\/\/|www\..+\..+)")
         soup = BeautifulSoup(html, "html.parser")
-        links = []
-        for link in soup.findAll('a', attrs={'href': URL_PATTERN}):
-            links.append(link)
-        links = list(set(links))
-        return links
+        links = {link for link in soup.findAll('a', attrs={'href': URL_PATTERN})}
+        return list(links)
 
     def save_session_storage(self, path: str | None = None):
         """
@@ -115,9 +112,11 @@ class Wrighter:
                 self.context.storage_state(path=self.settings.storage_state)
                 LOG.info(f"Session storage saved to '{self.settings.storage_state}'")
             else:
-                ...
+                raise ValueError(
+                    "Pass the save path to this method call or define 'storage_state' in PlaywrightSettings."
+                )
         else:
-            raise TypeError(
+            raise ValueError(
                 "Pass the save path to this method call or define 'storage_state' in PlaywrightSettings."
             )
 
