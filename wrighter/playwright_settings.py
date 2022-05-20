@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dathas import Dathas, dataclass
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
+from user_agent import generate_user_agent
 
 
 @dataclass()
@@ -21,12 +22,20 @@ class PlaywrightSettings(Dathas):
     storage_state: str = None
 
     @staticmethod
-    def get_default():
-        return PlaywrightSettings()
+    def default():
+        return PlaywrightSettings(
+            user_agent=generate_user_agent(device_type="desktop", os=("mac", "win")),
+            java_script_enabled=True,
+            viewport=ViewportSize(width=1920, height=1080),
+        )
 
     @staticmethod
-    def get_random():
-        raise NotImplementedError
+    def random(device_type: str = "all"):
+        return PlaywrightSettings(
+            user_agent=generate_user_agent(device_type=device_type),
+            java_script_enabled=True,
+            viewport=ViewportSize(width=1920, height=1080),
+        )
 
     def print(self):
         for key, val in self.dict.items():
