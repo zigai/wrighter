@@ -4,6 +4,8 @@ from dathas import Dathas, dataclass
 from playwright._impl._api_structures import (Cookie, Geolocation, ProxySettings, ViewportSize)
 from user_agent import generate_user_agent
 
+MOST_COMMON_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
+
 
 @dataclass()
 class PlaywrightSettings(Dathas):
@@ -24,15 +26,15 @@ class PlaywrightSettings(Dathas):
     @staticmethod
     def default():
         return PlaywrightSettings(
-            user_agent=generate_user_agent(device_type="desktop", os=("mac", "win")),
+            user_agent=MOST_COMMON_USER_AGENT,
             java_script_enabled=True,
             viewport=ViewportSize(width=1920, height=1080),
         )
 
     @staticmethod
-    def random(device_type: str = "all"):
+    def random(device_type: str = "all", os=("mac", "win")):
         return PlaywrightSettings(
-            user_agent=generate_user_agent(device_type=device_type),
+            user_agent=generate_user_agent(device_type=device_type, os=os),
             java_script_enabled=True,
             viewport=ViewportSize(width=1920, height=1080),
         )
