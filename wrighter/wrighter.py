@@ -155,7 +155,8 @@ class Wrighter:
         if not os.path.exists(directory):
             os.makedirs(directory)
         if filename is None:
-            filename = f"screenshot.{self.page.title()}.{str_util.FilterStr.file_name(self.page.url)}.png"
+            filename = f"screenshot.{str_util.FilterStr.file_name(self.page.title())}.{str_util.FilterStr.file_name(self.page.url)}.png"
+
         path = f"{directory}{os.sep}{filename}"
         LOG.info(f"Saving a screenshot of {self.page.url} to '{path}'")
         self.page.screenshot(type="png", path=path, full_page=full_page)
@@ -173,11 +174,15 @@ class Wrighter:
         datetime = DateTime.from_timestamp_as_str(time.time(), date_sep="-",
                                                   time_sep="-").replace(", ", ".")
         self.load_page("https://bot.sannysoft.com/")
-        self.sleep_for(seconds=3)
+        self.sleep_for(seconds=5)
         self.screenshot(filename=f"{datetime}_test_fingerprint.png")
 
+        self.load_page("https://amiunique.org/fp")
+        self.sleep_for(seconds=5)
+        self.screenshot(filename=f"{datetime}_test_amiunique.png")
+
         self.load_page("https://antcpt.com/eng/information/demo-form/recaptcha-3-test-score.html")
-        self.sleep_for(seconds=6)
+        self.sleep_for(seconds=8)
         self.screenshot(filename=f"{datetime}_test_recaptcha3.png")
 
         self.load_page("https://pixelscan.net/")
