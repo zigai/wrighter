@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(name="wrighter",
-      version="0.1.4",
+      version="0.2.4",
       description="Quickly build web scrapers with Playwright",
       long_description=README,
       long_description_content_type="text/markdown",
