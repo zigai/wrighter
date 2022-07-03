@@ -53,7 +53,6 @@ class Wrighter:
             self.context: BrowserContext = self.browser
         else:
             self.context: BrowserContext = self._get_context(settings=self.settings)
-
         self.data_dir = os.path.abspath(data_dir)
         if not os.path.exists(self.data_dir):
             LOG.warning(f"'{self.data_dir}' doesn't exist, creating it.")
@@ -177,11 +176,15 @@ class Wrighter:
 
         if self.user_data_dir:
             if self.settings is None:
-                return br.launch_persistent_context(user_data_dir=self.user_data_dir,
-                                                    headless=self.headless)
-            return br.launch_persistent_context(user_data_dir=self.user_data_dir,
-                                                headless=self.headless,
-                                                **self.settings.dict)
+                return br.launch_persistent_context(
+                    user_data_dir=self.user_data_dir,
+                    headless=self.headless,
+                )
+            return br.launch_persistent_context(
+                user_data_dir=self.user_data_dir,
+                headless=self.headless,
+                **self.settings.dict,
+            )
         else:
             return br.launch(headless=self.headless)
 
