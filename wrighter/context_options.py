@@ -66,6 +66,6 @@ class PlaywrightContextOptions(BaseModel, Options):
 
     @validator("viewport", "screen", "record_video_size")
     def validate_viewport_size(cls, v: ViewportSize):
-        if v.width < 1 or v.height < 1:
+        if v.width < 1 or v.height < 1:  # type: ignore
             raise ValueError(v)
         return v
