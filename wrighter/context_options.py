@@ -1,18 +1,19 @@
 import typing
 from pathlib import Path
-from typing import Literal, Pattern
+from typing import Literal
 
 from playwright._impl._api_structures import (Geolocation, HttpCredentials, ProxySettings,
                                               StorageState, ViewportSize)
 from pydantic import BaseModel, validator
 from stdl import fs
 
+from constants import PERMISSIONS
 from options import Options
 
 
 class PlaywrightContextOptions(BaseModel, Options):
     """
-    Context options are documented at: 
+    Context options are documented at
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
     """
 
@@ -37,7 +38,6 @@ class PlaywrightContextOptions(BaseModel, Options):
     reduced_motion: Literal["no-preference", "reduce"] | None = None
     forced_colors: Literal["active", "none"] | None = None
     accept_downloads: bool | None = None
-    default_browser_type: str | None = None
     proxy: ProxySettings | None = None
     record_har_path: str | Path | None = None
     record_har_omit_content: bool | None = None
@@ -56,6 +56,16 @@ class PlaywrightContextOptions(BaseModel, Options):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()
 
+    @validator("permissions", each_item=True)
+    def validate_permissions(cls, v):
+        if isinstance(v, str):
+            v = v.lower()
+            if not v in PERMISSIONS:
+                raise ValueError(v)
+        return v
 
-o = PlaywrightContextOptions(record_har_content="attach")
-o.print()
+    @validator("viewport", "screen", "record_video_size")
+    def validate_viewport_size(cls, v: ViewportSize):
+        if v.width < 1 or v.height < 1:
+            raise ValueError(v)
+        return v
