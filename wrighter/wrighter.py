@@ -13,30 +13,31 @@ from playwright_stealth import stealth_sync
 from stdl import fs
 from stdl.logging import loguru_fmt
 
-from context_options import PlaywrightContextOptions
-from launch_options import PlaywrightLaunchOptions
-from wrighter_options import WrighterOptions
+from options import BrowserLaunchOptions, ContextOptions, WrighterOptions
 
-log.remove(0)
+log.remove()
 log.add(sys.stdout, level="DEBUG", format=loguru_fmt)  # type:ignore
-
 
 class Wrigher:
 
     def __init__(
         self,
         options: WrighterOptions | None = None,
-        launch_options: PlaywrightLaunchOptions | None = None,
-        context_options: PlaywrightContextOptions | None = None,
+        launch_options: BrowserLaunchOptions | None = None,
+        context_options: ContextOptions | None = None,
     ) -> None:
 
         self.options: WrighterOptions = self.__load_options(options, WrighterOptions)
-        self.launch_options: PlaywrightLaunchOptions = self.__load_options(launch_options, PlaywrightLaunchOptions)
-        self.context_options: PlaywrightContextOptions = self.__load_options(context_options, PlaywrightContextOptions)
+        self.launch_options: BrowserLaunchOptions = self.__load_options(launch_options, BrowserLaunchOptions)
+        self.context_options: ContextOptions = self.__load_options(context_options, ContextOptions)
         self.playwright = self.__start_playwright()
-
+        self.browser = self.__launch_browser()
+    
     def __enter__(self):
         return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
     def __load_options(self,val,cls):
         if val is None:
@@ -64,12 +65,30 @@ class Wrigher:
                 return self.playwright.webkit
         return self.playwright.chromium
     
+    @property
+    def __is_persistent(self):
+        return self.options.user_profile_dir is not None
+
+    def __launch_browser(self):
+        pass
+    
+    def new_tab(self):
+        pass
+    
+    def new_context(self):
+        pass
+
     def latest_user_agent(self, browser: str) -> str:
         browser = self.options.browser.capitalize()
         if browser == "Chromium":
             browser = "Chrome"
         return self.playwright.devices[f"Desktop {browser}"]['user_agent']
-    
+        
+    def display_options(self):
+        self.options.print()
+        self.launch_options.print()
+        self.context_options.print()
+
     def stop(self):
         log.info(f"Stopping Playwright")
         self.playwright.stop()
