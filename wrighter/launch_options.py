@@ -31,6 +31,6 @@ class PlaywrightLaunchOptions(BaseModel, Options):
     firefox_user_prefs: dict[str, str | float | bool] | None = None
 
     @validator('executable_path', "downloads_path", "traces_dir")
-    def path_exists(cls, v):
+    def __path_exists(cls, v):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()

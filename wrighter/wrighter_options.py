@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import BaseModel, validator
 from stdl import fs
 
@@ -9,6 +11,7 @@ class WrighterOptions(BaseModel, Options):
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
+    user_profile_dir: str | Path | None = None
 
     @validator("browser")
     def validate_browser(cls, v: str):
@@ -18,3 +21,8 @@ class WrighterOptions(BaseModel, Options):
         if v not in BROWSERS:
             raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
         return v
+
+    @validator('user_profile_dir')
+    def __path_exists(cls, v):
+        fs.assert_paths_exist(str(v))
+        return Path(str(v)).absolute()

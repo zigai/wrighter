@@ -52,12 +52,14 @@ class PlaywrightContextOptions(BaseModel, Options):
     record_har_content: Literal["attach", "embed", "omit"] | None = None
 
     @validator('record_har_path', "record_video_dir", "storage_state")
-    def path_exists(cls, v):
-        fs.assert_paths_exist(str(v))
-        return Path(str(v)).absolute()
+    def __path_exists(cls, v):
+        if isinstance(v, str) or isinstance(v, Path):
+            fs.assert_paths_exist(str(v))
+            return Path(str(v)).absolute()
+        return v
 
     @validator("permissions", each_item=True)
-    def validate_permissions(cls, v):
+    def __validate_permissions(cls, v):
         if isinstance(v, str):
             v = v.lower()
             if not v in PERMISSIONS:
@@ -65,7 +67,7 @@ class PlaywrightContextOptions(BaseModel, Options):
         return v
 
     @validator("viewport", "screen", "record_video_size")
-    def validate_viewport_size(cls, v: ViewportSize):
+    def __validate_viewport_size(cls, v: ViewportSize):
         if v.width < 1 or v.height < 1:  # type: ignore
             raise ValueError(v)
         return v
