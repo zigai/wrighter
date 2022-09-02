@@ -1,7 +1,10 @@
+import json
 import pprint
+import sys
 from pathlib import Path
 from typing import Any, Literal
 
+from loguru import logger as log
 from playwright._impl._api_structures import (Geolocation, HttpCredentials,
                                               ProxySettings, StorageState,
                                               ViewportSize)
@@ -15,11 +18,7 @@ from constants import BROWSERS, PERMISSIONS
 class Options(BaseModel):
 
     def configured_options(self) -> dict[str, Any]:
-        return {
-            k: v
-            for k, v in self.dict().items()  # type: ignore
-            if v is not None
-        }
+        return {k: v for k, v in self.dict().items() if v is not None}
 
     def print(self):
         conf = self.configured_options()
@@ -29,7 +28,10 @@ class Options(BaseModel):
             print("")
 
     def export(self, path: str | Path):
-        fs.File(path).write(self.json(exclude_unset=True, exclude_none=True))
+        json_opts = self.json(exclude_unset=True, exclude_none=True)
+        json_data = json.loads(json_opts)
+        fs.json_dump(data=json_data, path=path)
+        log.info(f"{self.__class__.__name__} exported.", path=str(path))
 
 
 class WrighterOptions(Options):
