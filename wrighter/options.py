@@ -7,11 +7,12 @@ from playwright._impl._api_structures import (Geolocation, HttpCredentials,
                                               ViewportSize)
 from pydantic import BaseModel, validator
 from stdl import fs
+from stdl.str_u import FG, colored
 
 from constants import BROWSERS, PERMISSIONS
 
 
-class _Options:
+class Options(BaseModel):
 
     def configured_options(self) -> dict[str, Any]:
         return {
@@ -23,15 +24,19 @@ class _Options:
     def print(self):
         conf = self.configured_options()
         if len(conf):
-            print(f"{self.__class__.__name__}:")
+            print(colored(self.__class__.__name__, color=FG.BRIGHT_BLUE) + ":")
             pprint.pprint(conf)
             print("")
 
+    def export(self, path: str | Path):
+        fs.File(path).write(self.json(exclude_unset=True, exclude_none=True))
 
-class WrighterOptions(BaseModel, _Options):
+
+class WrighterOptions(Options):
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
+    data_dir: str | Path | None = None
     user_data_dir: str | Path | None = None
 
     @validator("browser")
@@ -43,13 +48,13 @@ class WrighterOptions(BaseModel, _Options):
             raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
         return v
 
-    @validator('user_data_dir')
+    @validator('user_data_dir', 'data_dir')
     def __path_exists(cls, v):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()
 
 
-class BrowserLaunchOptions(BaseModel, _Options):
+class BrowserLaunchOptions(Options):
     """
     Browser launch options are documented at 
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
@@ -78,7 +83,7 @@ class BrowserLaunchOptions(BaseModel, _Options):
         return Path(str(v)).absolute()
 
 
-class ContextOptions(BaseModel, _Options):
+class ContextOptions(Options):
     """
     Context options are documented at
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
@@ -135,7 +140,8 @@ class ContextOptions(BaseModel, _Options):
 
     @validator("viewport", "screen", "record_video_size")
     def __validate_viewport_size(cls, v: ViewportSize):
-        if v["width"] < 1 or v["height"] < 1:
+        MIN_VIEWPORT_SIZE = 1
+        if v["width"] < MIN_VIEWPORT_SIZE or v["height"] < MIN_VIEWPORT_SIZE:
             raise ValueError(v)
         return v
 
