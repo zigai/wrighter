@@ -8,14 +8,15 @@ from loguru import logger as log
 from playwright._impl._api_structures import (Geolocation, HttpCredentials,
                                               ProxySettings, StorageState,
                                               ViewportSize)
+from playwright_stealth import StealthConfig as StealthOptions
 from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
 
-from constants import BROWSERS, PERMISSIONS
+from constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
 
 
-class Options(BaseModel):
+class OptionsBase(BaseModel):
 
     def configured_options(self) -> dict[str, Any]:
         return {k: v for k, v in self.dict().items() if v is not None}
@@ -34,15 +35,17 @@ class Options(BaseModel):
         log.info(f"{self.__class__.__name__} exported.", path=str(path))
 
 
-class WrighterOptions(Options):
+class WrighterOptions(OptionsBase):
+    data_dir: str | Path = "."
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
-    data_dir: str | Path | None = None
     user_data_dir: str | Path | None = None
+    page_timeout_ms: int = 30000
+    block_resources: list[str] | None = None
 
     @validator("browser")
-    def validate_browser(cls, v: str):
+    def __validate_browser(cls, v: str):
         v = v.lower().strip()
         if v == "chrome":
             v = "chromium"
@@ -55,8 +58,14 @@ class WrighterOptions(Options):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()
 
+    @validator("block_resources", each_item=True)
+    def __is_valid_resource(cls, v):
+        if not v in RESOURCE_TYPES:
+            raise ValueError(v)
+        return v
 
-class BrowserLaunchOptions(Options):
+
+class BrowserLaunchOptions(OptionsBase):
     """
     Browser launch options are documented at 
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
@@ -85,7 +94,7 @@ class BrowserLaunchOptions(Options):
         return Path(str(v)).absolute()
 
 
-class ContextOptions(Options):
+class ContextOptions(OptionsBase):
     """
     Context options are documented at
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
@@ -148,4 +157,7 @@ class ContextOptions(Options):
         return v
 
 
-__all__ = ["WrighterOptions", "ContextOptions", "BrowserLaunchOptions"]
+__all__ = [
+    "WrighterOptions", "ContextOptions", "BrowserLaunchOptions",
+    "StealthOptions"
+]
