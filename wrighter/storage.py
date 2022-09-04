@@ -3,7 +3,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 import jsonschema
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ class JsonDatabase(StorageInterface):
         schema: dict | None = None,
         encoding="utf-8",
         indent: int = 4,
-        encoder=None,
+        encoder: Callable = None,
     ) -> None:
         self.path = Path(path).absolute()
         self.file = fs.File(path)
