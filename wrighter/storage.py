@@ -73,7 +73,7 @@ class JsonDatabase(StorageInterface):
         """File exists but is empty"""
         return self.file.exists and self.file.size() == 0
 
-    def push(self, data: dict | Mapping):
+    def push(self, data: dict | str | Mapping | Iterable):
         data = self._convert(data)
         if not self._validate(data):
             return False
