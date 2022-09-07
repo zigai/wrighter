@@ -5,12 +5,13 @@ from functools import cached_property
 from pathlib import Path
 from typing import Callable
 
+import pretty_errors
 from loguru import logger as log
 from playwright._impl._api_structures import (Cookie, Geolocation,
                                               ProxySettings, ViewportSize)
 from playwright.sync_api import (Browser, BrowserContext, BrowserType, Page,
                                  Playwright, Response, Route, sync_playwright)
-from playwright_stealth import stealth_sync
+from playwright_stealth import StealthConfig, stealth_sync
 from stdl import fs
 from stdl.logging import loguru_fmt
 
@@ -21,6 +22,14 @@ from utils import load_pydatic_obj
 log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_fmt)
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class RouteEvent:
+    pattern: str
+    handler: Callable
+
 
 class Wrigher:
 
@@ -30,6 +39,7 @@ class Wrigher:
         launch_options: BrowserLaunchOptions | None = None,
         context_options: ContextOptions | None = None,
         storage: StorageInterface | None = None,
+        stealth_config: StealthConfig | None = None,
     ) -> None:
         self.options: WrighterOptions = load_pydatic_obj(
             options,
@@ -43,9 +53,20 @@ class Wrigher:
             context_options,
             ContextOptions,
         )
+        self.stealth_config = stealth_config
+
+        self.on_response_events: list[Callable] = []
+        self.on_page_events: list[Callable] = [
+            self.__apply_timeout,
+            self.__sync_page_apply_stealth,
+        ]
+        self.route_events: list[RouteEvent] = [
+            self.__maybe_block_resources,
+        ]
+
         self.storage = storage
         self.__init_storage()
-        self.playwright = self.__start_playwright()
+        self.playwright = self.__start_sync_playwright()
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
         self.page = self.context.new_page()
@@ -55,13 +76,14 @@ class Wrigher:
 
     def stop(self):
         log.info(f"Stopping Playwright")
+        self.context.close()
         self.browser.close()
         self.playwright.stop()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
-    def __start_playwright(self) -> Playwright:
+    def __start_sync_playwright(self) -> Playwright:
         log.info(f"Starting Playwright")
         return sync_playwright().start()
 
@@ -78,7 +100,7 @@ class Wrigher:
         return self.playwright.chromium
 
     @property
-    def _is_persistent(self):
+    def _IS_PERSISTENT(self):
         """
         Returns True if user_data_dir is set in WrighterOptions
         """
@@ -87,7 +109,8 @@ class Wrigher:
     def __init_storage(self):
         if self.storage is not None:
             return
-        self.storage = JsonDatabase(path=self.options.data_dir)
+        path = self.options.data_dir / "storage.json"  # type: ignore
+        self.storage = JsonDatabase(path=path)
 
     def __get_persistent_context_options(self):
         opts = self.context_options.dict() | self.launch_options.dict()
@@ -102,45 +125,64 @@ class Wrigher:
 
     def __launch_browser(self) -> Browser | BrowserContext:
         driver = self.__get_browser_type(self.options.browser)
-        if self._is_persistent:
+        if self._IS_PERSISTENT:
             opts = self.__get_persistent_context_options()
             browser_context = driver.launch_persistent_context(**opts)
-            browser_context.on("page", lambda page: self._on_page(page))
+            browser_context.on("page",
+                               lambda page: self.__page_apply_events(page))
             return browser_context
         else:
             return driver.launch(**self.launch_options.dict())
 
     def __launch_context(self) -> BrowserContext:
-        if self._is_persistent:
+        if self._IS_PERSISTENT:
             return self.browser  # type: ignore
         return self.new_context()
 
-    def ___blocked_resource_handler(self, route: Route):
-        if route.request.resource_type in self.options.block_resources:  #type:ignore
-            return route.abort()
-        return route.continue_()
+    def __page_apply_events(self, page: Page):
+        for event in self.on_page_events:
+            log.debug("Applying on page event.", event=event.__name__)
+            event(page)
+        for event in self.route_events:
+            log.debug("Applying route event.", event=event)
+            page.route(url=event.pattern, handler=event.handler)
 
-    def _on_page(self, page: Page):
-        """
-        This is called when a new Page is created in the BrowserContext. 
-        Can be overwritten to define custom behaviour.
-        """
-        page.wait_for_load_state()
-        if self.options.block_resources:
-            page.route(
-                "**/*",
-                lambda route: self.___blocked_resource_handler(route=route))
-        page.on("response", lambda response: self._on_response(response))
+        for event in self.on_response_events:
+            log.debug("Applying response event.", event=event.__name__)
+            page.on("response", lambda response: event(response))
+
+    # On Page events:
+    def __sync_page_apply_stealth(self, page: Page):
+        if self.options.stealth is not None:
+            log.debug("Applying stealth to page.", page=page)
+            stealth_sync(page=page, config=self.stealth_config)
+
+    def __apply_timeout(self, page: Page):
         page.set_default_timeout(self.options.page_timeout_ms)
-        if self.options.stealth:
-            stealth_sync(page=page)
 
-    def _on_response(self, response: Response):
-        """
-        This is called  when response status and headers are received for a request. 
-        Can be overwritten to define custom behaviour.
-        """
-        ...
+    def __print_page(self, page: Page):
+        log.info(f"PAGE: {page.url}")
+
+    # Route events
+    @property
+    def __maybe_block_resources(self):
+        # Scope ok?
+        def __page_block_resources_func(self, route: Route):
+            if self.options.block_resources is None: return route.continue_()
+            if route.request.resource_type in self.options.block_resources:  #type:ignore
+                return route.abort()
+            return route.continue_()
+
+        return RouteEvent(
+            pattern="**/*",
+            handler=__page_block_resources_func,
+        )
+
+    # On response events
+    def __print_response(self, response: Response):
+        log.info(f"RESPONSE: {response}")
+
+    # ----
 
     def _get_save_dir(self, dir_param: str | Path | None) -> Path:
         if dir_param is None:
@@ -153,17 +195,19 @@ class Wrigher:
 
     @property
     def pages(self) -> list[Page]:
-        if self._is_persistent:
+        if self._IS_PERSISTENT:
             return self.browser.pages
         return self.context.pages
 
-    def new_context(self, on_page: Callable | None = None):
-        if self._is_persistent:
+    def new_context(self,
+                    on_page: Callable
+                    | None = None):  # on page arg should be removed
+        if self._IS_PERSISTENT:
             raise RuntimeError("Cannot create contexts in persistent mode.")
 
         context = self.browser.new_context(**self.context_options.dict())
         if on_page is None:
-            context.on("page", lambda page: self._on_page(page))
+            context.on("page", lambda page: self.__page_apply_events(page))
         else:
             context.on("page", lambda page: on_page(page))
         return context
