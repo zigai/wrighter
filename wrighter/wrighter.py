@@ -166,17 +166,16 @@ class Wrigher:
     # Route events
     @property
     def __maybe_block_resources(self):
-        # Scope ok?
-        def __page_block_resources_func(self, route: Route):
-            if self.options.block_resources is None: return route.continue_()
-            if route.request.resource_type in self.options.block_resources:  #type:ignore
-                return route.abort()
-            return route.continue_()
-
         return RouteEvent(
             pattern="**/*",
-            handler=__page_block_resources_func,
+            handler=self.__page_block_resources_func,
         )
+
+    def __page_block_resources_func(self, route: Route):
+        if self.options.block_resources is None: return route.continue_()
+        if route.request.resource_type in self.options.block_resources:  #type:ignore
+            return route.abort()
+        return route.continue_()
 
     # On response events
     def __print_response(self, response: Response):
@@ -184,32 +183,43 @@ class Wrigher:
 
     # ----
 
-    def _get_save_dir(self, dir_param: str | Path | None) -> Path:
-        if dir_param is None:
+    def _get_save_dir(self, param: str | Path | None) -> Path:
+        """Return param as Path it it's provided. If not return 'options.data_dir'."""
+        if param is None:
             return self.options.data_dir  # type: ignore
-        return Path(dir_param)
+        return Path(param)
 
     @property
     def contexts(self) -> list[BrowserContext]:
-        return self.browser.contexts
+        """Returns all open contexts."""
+        if isinstance(self.browser, Browser):
+            return self.browser.contexts
+        elif isinstance(self.browser, BrowserContext):
+            return [self.browser]
+        raise TypeError(self.browser)
 
     @property
     def pages(self) -> list[Page]:
-        if self._IS_PERSISTENT:
-            return self.browser.pages
-        return self.context.pages
+        """ Returns pages open across all contexts."""
+        pages = []
+        for context in self.contexts:
+            pages.extend(context.pages)
+        return pages
 
-    def new_context(self,
-                    on_page: Callable
-                    | None = None):  # on page arg should be removed
+    def new_context(self) -> BrowserContext:
+        """
+        Launches a new context that will apply all configured events to pages opened with it. 
+
+        Raises:
+            RuntimeError: if ypi try to launch a new context in peristent mode. (if 'user_data_dir' is set)
+
+        Returns:
+            BrowserContext
+        """
         if self._IS_PERSISTENT:
             raise RuntimeError("Cannot create contexts in persistent mode.")
-
         context = self.browser.new_context(**self.context_options.dict())
-        if on_page is None:
-            context.on("page", lambda page: self.__page_apply_events(page))
-        else:
-            context.on("page", lambda page: on_page(page))
+        context.on("page", lambda page: self.__page_apply_events(page))
         return context
 
     def latest_user_agent(self, browser: str) -> str:
