@@ -74,12 +74,6 @@ class Wrigher:
     def __enter__(self):
         return self
 
-    def stop(self):
-        log.info(f"Stopping Playwright")
-        self.context.close()
-        self.browser.close()
-        self.playwright.stop()
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
@@ -209,6 +203,26 @@ class Wrigher:
             pages.extend(context.pages)
         return pages
 
+    @cached_property
+    def screenshot_dir(self) -> Path:
+        screens_dir: Path = self.options.data_dir / "screenshots"  # type:ignore
+        if not screens_dir.exists():
+            screens_dir.mkdir()
+        return screens_dir
+
+    @cached_property
+    def video_dir(self) -> Path:
+        videos_dir: Path = self.options.data_dir / "videos"  # type:ignore
+        if not videos_dir.exists():
+            videos_dir.mkdir()
+        return videos_dir
+
+    def stop(self):
+        log.info(f"Stopping Playwright")
+        self.context.close()
+        self.browser.close()
+        self.playwright.stop()
+
     def new_context(self) -> BrowserContext:
         """
         Launches a new context that will apply all configured events to pages opened with it. 
@@ -264,20 +278,6 @@ class Wrigher:
         log.info("Sleeping", seconds=round(seconds, 1))
         time.sleep(seconds)
         return seconds
-
-    @cached_property
-    def screenshot_dir(self) -> Path:
-        screens_dir: Path = self.options.data_dir / "screenshots"  # type:ignore
-        if not screens_dir.exists():
-            screens_dir.mkdir()
-        return screens_dir
-
-    @cached_property
-    def video_dir(self) -> Path:
-        videos_dir: Path = self.options.data_dir / "videos"  # type:ignore
-        if not videos_dir.exists():
-            videos_dir.mkdir()
-        return videos_dir
 
     def export_storage_state(self, path: str | Path | None = None):
         if path is None and self.context_options.storage_state:
