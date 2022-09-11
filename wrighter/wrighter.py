@@ -1,6 +1,7 @@
 import random
 import sys
 import time
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Callable
@@ -21,8 +22,6 @@ from utils import load_pydatic_obj
 
 log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_fmt)
-
-from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -56,6 +55,7 @@ class Wrigher:
         self.stealth_config = stealth_config
 
         self.on_response_events: list[Callable] = []
+        self.on_request_events: list[Callable] = []
         self.on_page_events: list[Callable] = [
             self.__apply_timeout,
             self.__sync_page_apply_stealth,
@@ -64,7 +64,7 @@ class Wrigher:
             self.__maybe_block_resources,
         ]
 
-        self.storage = storage
+        self.storage: StorageInterface = storage
         self.__init_storage()
         self.playwright = self.__start_sync_playwright()
         self.browser = self.__launch_browser()
@@ -89,7 +89,7 @@ class Wrigher:
 
     def __get_browser_type(self, browser: str) -> BrowserType:
         """
-        match browser:
+        match browser.lower():
             case "chromium":
                 return self.playwright.chromium
             case "firefox":
@@ -140,15 +140,16 @@ class Wrigher:
         return self.new_context()
 
     def __page_apply_events(self, page: Page):
+        for event in self.on_request_events:
+            page.on("request", lambda request: event(request))
         for event in self.on_page_events:
-            log.debug("Applying on page event.", event=event.__name__)
+            #log.debug("Applying on page event.", event=event.__name__)
             event(page)
         for event in self.route_events:
-            log.debug("Applying route event.", event=event)
+            #log.debug("Applying route event.", event=event)
             page.route(url=event.pattern, handler=event.handler)
-
         for event in self.on_response_events:
-            log.debug("Applying response event.", event=event.__name__)
+            #log.debug("Applying response event.", event=event.__name__)
             page.on("response", lambda response: event(response))
 
     # On Page events:
@@ -178,8 +179,10 @@ class Wrigher:
         return route.continue_()
 
     # On response events
-    def __print_response(self, response: Response):
-        log.info(f"RESPONSE: {response}")
+    def __log_failed_response(self, response: Response):
+        log.error(f"FAILED: {response}",
+                  code=response.status,
+                  text=response.status_text)
 
     # ----
 
@@ -211,7 +214,7 @@ class Wrigher:
         Launches a new context that will apply all configured events to pages opened with it. 
 
         Raises:
-            RuntimeError: if ypi try to launch a new context in peristent mode. (if 'user_data_dir' is set)
+            RuntimeError: if you try to launch a new context in peristent mode. (if 'user_data_dir' is set)
 
         Returns:
             BrowserContext
@@ -228,9 +231,33 @@ class Wrigher:
             browser = "Chrome"
         return self.playwright.devices[f"Desktop {browser}"]['user_agent']
 
+    def add_on_response_event(self, event: Callable, existing: bool = True):
+        self.on_response_events.append(event)
+        if existing:
+            for page in self.pages:
+                page.on("response", lambda response: event(response))
+
+    def add_on_request_event(self, event: Callable, existing: bool = True):
+        self.on_request_events.append(event)
+        if existing:
+            for page in self.pages:
+                page.on("request", lambda request: event(request))
+
+    def add_on_page_event(self, event: Callable, existing: bool = True):
+        self.on_page_events.append(event)
+        if existing:
+            for page in self.pages:
+                event(page)
+
+    def add_route_event(self, event: RouteEvent, existing: bool = True):
+        self.route_events.append(event)
+        if existing:
+            for page in self.pages:
+                page.route(url=event.pattern, handler=event.handler)
+
     def sleep(self, seconds: float | tuple[float, float]):
         if isinstance(seconds, tuple):
-            if not seconds[0] <= seconds[1]:
+            if seconds[0] > seconds[1]:
                 raise ValueError(
                     f"Minimum sleep value is higher that maximum. {seconds=}")
             seconds = random.uniform(seconds[0], seconds[1])
@@ -239,14 +266,14 @@ class Wrigher:
         return seconds
 
     @cached_property
-    def screenshots_dir(self) -> Path:
+    def screenshot_dir(self) -> Path:
         screens_dir: Path = self.options.data_dir / "screenshots"  # type:ignore
         if not screens_dir.exists():
             screens_dir.mkdir()
         return screens_dir
 
     @cached_property
-    def videos_dir(self) -> Path:
+    def video_dir(self) -> Path:
         videos_dir: Path = self.options.data_dir / "videos"  # type:ignore
         if not videos_dir.exists():
             videos_dir.mkdir()
