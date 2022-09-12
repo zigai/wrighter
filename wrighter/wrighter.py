@@ -8,10 +8,17 @@ from typing import Callable
 
 import pretty_errors
 from loguru import logger as log
-from playwright._impl._api_structures import (Cookie, Geolocation,
-                                              ProxySettings, ViewportSize)
-from playwright.sync_api import (Browser, BrowserContext, BrowserType, Page,
-                                 Playwright, Response, Route, sync_playwright)
+from playwright._impl._api_structures import Cookie, Geolocation, ProxySettings, ViewportSize
+from playwright.sync_api import (
+    Browser,
+    BrowserContext,
+    BrowserType,
+    Page,
+    Playwright,
+    Response,
+    Route,
+    sync_playwright,
+)
 from playwright_stealth import StealthConfig, stealth_sync
 from stdl import fs
 from stdl.logging import loguru_fmt
@@ -31,7 +38,6 @@ class RouteEvent:
 
 
 class Wrigher:
-
     def __init__(
         self,
         options: WrighterOptions | None = None,
@@ -40,29 +46,17 @@ class Wrigher:
         storage: StorageInterface | None = None,
         stealth_config: StealthConfig | None = None,
     ) -> None:
-        self.options: WrighterOptions = load_pydatic_obj(
-            options,
-            WrighterOptions,
-        )
+        self.options: WrighterOptions = load_pydatic_obj(options, WrighterOptions)
         self.launch_options: BrowserLaunchOptions = load_pydatic_obj(
-            launch_options,
-            BrowserLaunchOptions,
+            launch_options, BrowserLaunchOptions
         )
-        self.context_options: ContextOptions = load_pydatic_obj(
-            context_options,
-            ContextOptions,
-        )
+        self.context_options: ContextOptions = load_pydatic_obj(context_options, ContextOptions)
         self.stealth_config = stealth_config
 
         self.on_response_events: list[Callable] = []
         self.on_request_events: list[Callable] = []
-        self.on_page_events: list[Callable] = [
-            self.__apply_timeout,
-            self.__sync_page_apply_stealth,
-        ]
-        self.route_events: list[RouteEvent] = [
-            self.__maybe_block_resources,
-        ]
+        self.on_page_events: list[Callable] = [self.__apply_timeout, self.__sync_page_apply_stealth]
+        self.route_events: list[RouteEvent] = [self.__maybe_block_resources]
 
         self.storage: StorageInterface = storage
         self.__init_storage()
@@ -82,7 +76,6 @@ class Wrigher:
         return sync_playwright().start()
 
     def __get_browser_type(self, browser: str) -> BrowserType:
-        """
         match browser.lower():
             case "chromium":
                 return self.playwright.chromium
@@ -90,7 +83,6 @@ class Wrigher:
                 return self.playwright.firefox
             case "webkit":
                 return self.playwright.webkit
-        """
         return self.playwright.chromium
 
     @property
@@ -112,7 +104,8 @@ class Wrigher:
         if "storage_state" in opts.keys():
             log.warning(
                 "'storage_state' is ignored when launching a browser with a persitent context",
-                storage_state=opts["storage_state"])
+                storage_state=opts["storage_state"],
+            )
             del opts["storage_state"]
         opts["user_data_dir"] = self.options.user_data_dir
         return opts
@@ -122,8 +115,7 @@ class Wrigher:
         if self._IS_PERSISTENT:
             opts = self.__get_persistent_context_options()
             browser_context = driver.launch_persistent_context(**opts)
-            browser_context.on("page",
-                               lambda page: self.__page_apply_events(page))
+            browser_context.on("page", lambda page: self.__page_apply_events(page))
             return browser_context
         else:
             return driver.launch(**self.launch_options.dict())
@@ -137,13 +129,13 @@ class Wrigher:
         for event in self.on_request_events:
             page.on("request", lambda request: event(request))
         for event in self.on_page_events:
-            #log.debug("Applying on page event.", event=event.__name__)
+            # log.debug("Applying on page event.", event=event.__name__)
             event(page)
         for event in self.route_events:
-            #log.debug("Applying route event.", event=event)
+            # log.debug("Applying route event.", event=event)
             page.route(url=event.pattern, handler=event.handler)
         for event in self.on_response_events:
-            #log.debug("Applying response event.", event=event.__name__)
+            # log.debug("Applying response event.", event=event.__name__)
             page.on("response", lambda response: event(response))
 
     # On Page events:
@@ -161,22 +153,18 @@ class Wrigher:
     # Route events
     @property
     def __maybe_block_resources(self):
-        return RouteEvent(
-            pattern="**/*",
-            handler=self.__page_block_resources_func,
-        )
+        return RouteEvent(pattern="**/*", handler=self.__page_block_resources_func)
 
     def __page_block_resources_func(self, route: Route):
-        if self.options.block_resources is None: return route.continue_()
-        if route.request.resource_type in self.options.block_resources:  #type:ignore
+        if self.options.block_resources is None:
+            return route.continue_()
+        if route.request.resource_type in self.options.block_resources:  # type:ignore
             return route.abort()
         return route.continue_()
 
     # On response events
     def __log_failed_response(self, response: Response):
-        log.error(f"FAILED: {response}",
-                  code=response.status,
-                  text=response.status_text)
+        log.error(f"FAILED: {response}", code=response.status, text=response.status_text)
 
     # ----
 
@@ -197,7 +185,7 @@ class Wrigher:
 
     @property
     def pages(self) -> list[Page]:
-        """ Returns pages open across all contexts."""
+        """Returns pages open across all contexts."""
         pages = []
         for context in self.contexts:
             pages.extend(context.pages)
@@ -225,7 +213,7 @@ class Wrigher:
 
     def new_context(self) -> BrowserContext:
         """
-        Launches a new context that will apply all configured events to pages opened with it. 
+        Launches a new context that will apply all configured events to pages opened with it.
 
         Raises:
             RuntimeError: if you try to launch a new context in peristent mode. (if 'user_data_dir' is set)
@@ -243,7 +231,7 @@ class Wrigher:
         browser = browser.capitalize()
         if browser == "Chromium":
             browser = "Chrome"
-        return self.playwright.devices[f"Desktop {browser}"]['user_agent']
+        return self.playwright.devices[f"Desktop {browser}"]["user_agent"]
 
     def add_on_response_event(self, event: Callable, existing: bool = True):
         self.on_response_events.append(event)
@@ -272,8 +260,7 @@ class Wrigher:
     def sleep(self, seconds: float | tuple[float, float]):
         if isinstance(seconds, tuple):
             if seconds[0] > seconds[1]:
-                raise ValueError(
-                    f"Minimum sleep value is higher that maximum. {seconds=}")
+                raise ValueError(f"Minimum sleep value is higher that maximum. {seconds=}")
             seconds = random.uniform(seconds[0], seconds[1])
         log.info("Sleeping", seconds=round(seconds, 1))
         time.sleep(seconds)

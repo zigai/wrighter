@@ -1,17 +1,16 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 import jsonschema
-from pydantic import BaseModel
 from stdl import fs
+
+from utils import to_dict
 
 
 class StorageInterface(ABC):
-
     @abstractmethod
     def push(self) -> bool:
         ...
@@ -27,14 +26,13 @@ class StorageInterface(ABC):
 
 
 class JsonDatabase(StorageInterface):
-
     def __init__(
         self,
         path: str | Path,
         schema: dict | None = None,
         encoding="utf-8",
         indent: int = 4,
-        encoder: Callable = None,
+        encoder: Callable | None = None,
     ) -> None:
         self.path = Path(path).absolute()
         self.file = fs.File(path)
@@ -51,18 +49,9 @@ class JsonDatabase(StorageInterface):
             return True
         try:
             jsonschema.validate(data, self.schema)
-        except:
+        except BaseException:
             return False
         return True
-
-    def _convert(self, data) -> dict | list[dict]:
-        if isinstance(data, dict): return data
-        if is_dataclass(data): return asdict(data)
-        if isinstance(data, BaseModel): return data.dict()
-        if isinstance(data, str): return json.loads(data)
-        if isinstance(data, Mapping): return dict(**data)
-        if isinstance(data, Iterable):
-            return [self._convert(i) for i in data]
 
     @property
     def size(self):
@@ -74,25 +63,25 @@ class JsonDatabase(StorageInterface):
         return self.file.exists and self.file.size() == 0
 
     def push(self, data: dict | str | Mapping | Iterable):
-        data = self._convert(data)
+        data = to_dict(data)
         if not self._validate(data):
             return False
         if self._is_empty or not self.file.exists:
-            with open(self.path, 'w') as f:
+            with open(self.path, "w") as f:
                 json.dump([data], f, indent=self.indent, default=self.encoder)
                 f.write("\n")
         else:
-            with open(self.path, 'a+', encoding=self.encoding) as f:
+            with open(self.path, "a+", encoding=self.encoding) as f:
                 f.seek(0, os.SEEK_END)
                 f.seek(f.tell() - 2, os.SEEK_SET)
                 f.truncate()
-                f.write(',\n')
+                f.write(",\n")
                 json.dump(data, f, indent=self.indent, default=self.encoder)
-                f.write(']\n')
+                f.write("]\n")
         return True
 
     @property
-    def data(self) -> list[dict]:
+    def data(self) -> list[dict] | dict:
         return fs.json_load(self.path)
 
     def clear(self):

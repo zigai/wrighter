@@ -25,6 +25,6 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     packages=find_packages(),
-    package_dir={'wrighter': 'wrighter'},
+    package_dir={"wrighter": "wrighter"},
     install_requires=REQUIREMENTS,
 )

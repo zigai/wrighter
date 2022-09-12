@@ -5,10 +5,14 @@ from pathlib import Path
 from typing import Any, Literal
 
 from loguru import logger as log
-from playwright._impl._api_structures import (Geolocation, HttpCredentials,
-                                              ProxySettings, StorageState,
-                                              ViewportSize)
-from playwright_stealth import StealthConfig as StealthOptions
+from playwright._impl._api_structures import (
+    Geolocation,
+    HttpCredentials,
+    ProxySettings,
+    StorageState,
+    ViewportSize,
+)
+from playwright_stealth import StealthConfig
 from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
@@ -17,7 +21,6 @@ from constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
 
 
 class OptionsBase(BaseModel):
-
     def configured_options(self) -> dict[str, Any]:
         return {k: v for k, v in self.dict().items() if v is not None}
 
@@ -53,23 +56,24 @@ class WrighterOptions(OptionsBase):
             raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
         return v
 
-    @validator('user_data_dir', 'data_dir')
+    @validator("user_data_dir", "data_dir")
     def __path_exists(cls, v):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()
 
     @validator("block_resources", each_item=True)
     def __is_valid_resource(cls, v):
-        if not v in RESOURCE_TYPES:
+        if v not in RESOURCE_TYPES:
             raise ValueError(v)
         return v
 
 
 class BrowserLaunchOptions(OptionsBase):
     """
-    Browser launch options are documented at 
+    Browser launch options are documented at
     https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
     """
+
     executable_path: str | Path | None = None
     channel: str | None = None
     args: list[str] | None = None
@@ -88,7 +92,7 @@ class BrowserLaunchOptions(OptionsBase):
     chromium_sandbox: bool | None = None
     firefox_user_prefs: dict[str, str | float | bool] | None = None
 
-    @validator('executable_path', "downloads_path", "traces_dir")
+    @validator("executable_path", "downloads_path", "traces_dir")
     def __path_exists(cls, v):
         fs.assert_paths_exist(str(v))
         return Path(str(v)).absolute()
@@ -134,7 +138,7 @@ class ContextOptions(OptionsBase):
     record_har_mode: Literal["full", "minimal"] | None = None
     record_har_content: Literal["attach", "embed", "omit"] | None = None
 
-    @validator('record_har_path', "record_video_dir", "storage_state")
+    @validator("record_har_path", "record_video_dir", "storage_state")
     def __path_exists(cls, v):
         if isinstance(v, str) or isinstance(v, Path):
             fs.assert_paths_exist(str(v))
@@ -145,7 +149,7 @@ class ContextOptions(OptionsBase):
     def __validate_permissions(cls, v):
         if isinstance(v, str):
             v = v.lower()
-            if not v in PERMISSIONS:
+            if v not in PERMISSIONS:
                 raise ValueError(v)
         return v
 
@@ -157,7 +161,4 @@ class ContextOptions(OptionsBase):
         return v
 
 
-__all__ = [
-    "WrighterOptions", "ContextOptions", "BrowserLaunchOptions",
-    "StealthOptions"
-]
+__all__ = ["WrighterOptions", "ContextOptions", "BrowserLaunchOptions", "StealthConfig"]
