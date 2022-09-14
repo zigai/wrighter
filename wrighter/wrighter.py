@@ -22,19 +22,15 @@ from playwright.sync_api import (
 from playwright_stealth import StealthConfig, stealth_sync
 from stdl import fs
 from stdl.logging import loguru_fmt
+from stdl.str_u import FG, colored
 
+from events import RouteEvent, event_description
 from options import BrowserLaunchOptions, ContextOptions, WrighterOptions
 from storage import JsonDatabase, StorageInterface
 from utils import load_pydatic_obj
 
 log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_fmt)
-
-
-@dataclass(frozen=True)
-class RouteEvent:
-    pattern: str
-    handler: Callable
 
 
 class Wrigher:
@@ -55,6 +51,7 @@ class Wrigher:
 
         self.on_response_events: list[Callable] = []
         self.on_request_events: list[Callable] = []
+        self.on_request_finished_events: list[Callable] = []
         self.on_page_events: list[Callable] = [self.__apply_timeout, self.__sync_page_apply_stealth]
         self.route_events: list[RouteEvent] = [self.__maybe_block_resources]
 
@@ -127,14 +124,13 @@ class Wrigher:
     def __page_apply_events(self, page: Page):
         for event in self.on_request_events:
             page.on("request", lambda request: event(request))
+        for event in self.on_request_finished_events:
+            page.on("requestfinished", lambda request: event(request))
         for event in self.on_page_events:
-            # log.debug("Applying on page event.", event=event.__name__)
             event(page)
         for event in self.route_events:
-            # log.debug("Applying route event.", event=event)
             page.route(url=event.pattern, handler=event.handler)
         for event in self.on_response_events:
-            # log.debug("Applying response event.", event=event.__name__)
             page.on("response", lambda response: event(response))
 
     # On Page events:
@@ -145,9 +141,6 @@ class Wrigher:
 
     def __apply_timeout(self, page: Page):
         page.set_default_timeout(self.options.page_timeout_ms)
-
-    def __print_page(self, page: Page):
-        log.info(f"PAGE: {page.url}")
 
     # Route events
     @property
@@ -238,6 +231,12 @@ class Wrigher:
             for page in self.pages:
                 page.on("response", lambda response: event(response))
 
+    def add_on_request_finished_event(self, event: Callable, existing: bool = True):
+        self.on_request_events.append(event)
+        if existing:
+            for page in self.pages:
+                page.on("requestfinished", lambda request: event(request))
+
     def add_on_request_event(self, event: Callable, existing: bool = True):
         self.on_request_events.append(event)
         if existing:
@@ -286,3 +285,34 @@ class Wrigher:
         self.options.print()
         self.launch_options.print()
         self.context_options.print()
+
+    def display_events(self):
+        if self.on_response_events:
+            print(colored("On response events:", color=FG.LIGHT_BLUE))
+            for i in self.on_response_events:
+                print(event_description(i))
+            print("")
+        if self.on_request_events:
+            print(colored("On request events:", color=FG.LIGHT_BLUE))
+            for i in self.on_request_events:
+                print(event_description(i))
+            print("")
+        if self.on_request_finished_events:
+            print(colored("On request finished events", color=FG.LIGHT_BLUE))
+            for i in self.on_request_finished_events:
+                print(event_description(i))
+            print("")
+        if self.on_page_events:
+            print(colored("On page created events:", color=FG.LIGHT_BLUE))
+            for i in self.on_page_events:
+                print(event_description(i))
+            print("")
+        if self.route_events:
+            print(colored("Route events:", color=FG.LIGHT_BLUE))
+            for i in self.route_events:
+                print(event_description(i))
+            print("")
+
+    def display_config(self):
+        self.display_options()
+        self.display_events()
