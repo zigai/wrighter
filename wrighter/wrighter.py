@@ -72,7 +72,7 @@ class Wrigher:
         self.stop()
 
     def __start_sync_playwright(self) -> Playwright:
-        log.info(f"Starting Playwright")
+        log.info("Starting Playwright")
         return sync_playwright().start()
 
     def __get_browser_type(self, browser: str) -> BrowserType:
@@ -117,8 +117,7 @@ class Wrigher:
             browser_context = driver.launch_persistent_context(**opts)
             browser_context.on("page", lambda page: self.__page_apply_events(page))
             return browser_context
-        else:
-            return driver.launch(**self.launch_options.dict())
+        return driver.launch(**self.launch_options.dict())
 
     def __launch_context(self) -> BrowserContext:
         if self._IS_PERSISTENT:
@@ -206,7 +205,7 @@ class Wrigher:
         return videos_dir
 
     def stop(self):
-        log.info(f"Stopping Playwright")
+        log.info("Stopping Playwright")
         self.context.close()
         self.browser.close()
         self.playwright.stop()
@@ -274,7 +273,7 @@ class Wrigher:
                 "No save path provided for storage state. Pass the path to this method call or define 'storage_state' in ContextOptions."
             )
             return
-        log.info(f"Storage state saved.", path=path)
+        log.info("Storage state saved.", path=path)
         self.context.storage_state(path=path)
 
     def export_options(self, directory: str | Path | None = None):
