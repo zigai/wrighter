@@ -4,17 +4,17 @@ from typing import Callable
 
 from loguru import logger as log
 from playwright.sync_api import Response
+from stdl.str_u import FG, colored
 
 
 def event_description(func):
     if isinstance(func, RouteEvent):
         return repr(func)
-    sep = " - "
     docstr = inspect.getdoc(func)
     if docstr is None:
-        docstr = ""
-        sep = ""
-    return f"{func.__name__}{sep}{docstr}"
+        return func.__name__
+    docstr = colored(docstr, color=FG.GRAY)
+    return f"{func.__name__} - {docstr}"
 
 
 @dataclass(frozen=True)

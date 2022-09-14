@@ -1,7 +1,6 @@
 import random
 import sys
 import time
-from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Callable
@@ -30,7 +29,7 @@ from storage import JsonDatabase, StorageInterface
 from utils import load_pydatic_obj
 
 log.remove(0)
-LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_fmt)
+LOGGER_ID = log.add(sys.stdout, level="WARNING", format=loguru_fmt)
 
 
 class Wrigher:
@@ -49,15 +48,18 @@ class Wrigher:
         self.context_options: ContextOptions = load_pydatic_obj(context_options, ContextOptions)
         self.stealth_config = stealth_config
 
+        self.playwright = self.__start_sync_playwright()
+
+        self.__resolve_options()
+        self.storage: StorageInterface = storage
+        self.__init_storage()
+
         self.on_response_events: list[Callable] = []
         self.on_request_events: list[Callable] = []
         self.on_request_finished_events: list[Callable] = []
         self.on_page_events: list[Callable] = [self.__apply_timeout, self.__sync_page_apply_stealth]
         self.route_events: list[RouteEvent] = [self.__maybe_block_resources]
 
-        self.storage: StorageInterface = storage
-        self.__init_storage()
-        self.playwright = self.__start_sync_playwright()
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
         self.page = self.context.new_page()
@@ -67,6 +69,12 @@ class Wrigher:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
+
+    def __resolve_options(self):
+        if self.context_options.user_agent is None and self.options.force_user_agent:
+            ua = self.latest_user_agent(self.options.browser)
+            self.context_options.user_agent = ua
+            log.info("Setting user agent.", force_user_agent=self.options.force_user_agent)
 
     def __start_sync_playwright(self) -> Playwright:
         log.info("Starting Playwright")
@@ -93,6 +101,7 @@ class Wrigher:
         if self.storage is not None:
             return
         path = self.options.data_dir / "storage.json"  # type: ignore
+        log.warning("Storage was not configured. JSON storage will be used.", path=str(path))
         self.storage = JsonDatabase(path=path)
 
     def __get_persistent_context_options(self):
@@ -133,13 +142,15 @@ class Wrigher:
         for event in self.on_response_events:
             page.on("response", lambda response: event(response))
 
+    # --- Built-in events
     # On Page events:
     def __sync_page_apply_stealth(self, page: Page):
+        """Apply stealh to page if 'stealth_config' is defined"""
         if self.options.stealth is not None:
-            log.debug("Applying stealth to page.", page=page)
-            stealth_sync(page=page, config=self.stealth_config)
+            stealth_sync(page=page, config=self.stealth_config)  # type: ignore
 
     def __apply_timeout(self, page: Page):
+        """Timeout for loading a page defined in 'options.page_timeout_ms'"""
         page.set_default_timeout(self.options.page_timeout_ms)
 
     # Route events
@@ -148,15 +159,12 @@ class Wrigher:
         return RouteEvent(pattern="**/*", handler=self.__page_block_resources_func)
 
     def __page_block_resources_func(self, route: Route):
+        """Block requests with resource types defined in 'options.block_resources'"""
         if self.options.block_resources is None:
             return route.continue_()
         if route.request.resource_type in self.options.block_resources:  # type:ignore
             return route.abort()
         return route.continue_()
-
-    # On response events
-    def __log_failed_response(self, response: Response):
-        log.error(f"FAILED: {response}", code=response.status, text=response.status_text)
 
     # ----
 

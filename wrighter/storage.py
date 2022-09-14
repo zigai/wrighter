@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 import jsonschema
+from loguru import logger as log
 from stdl import fs
 
 from utils import to_dict
@@ -46,15 +47,13 @@ class JsonDatabase(StorageInterface):
 
     def _validate(self, data):
         if self.schema is None:
-            return True
-        try:
-            jsonschema.validate(data, self.schema)
-        except BaseException:
-            return False
-        return True
+            return
+        jsonschema.validate(data, self.schema)
 
     @property
     def size(self):
+        if not self.file.exists:
+            return "0B"
         return self.file.size(readable=True)
 
     @property
@@ -64,8 +63,8 @@ class JsonDatabase(StorageInterface):
 
     def push(self, data: dict | str | Mapping | Iterable):
         data = to_dict(data)
-        if not self._validate(data):
-            return False
+        self._validate(data)
+
         fs.json_append(
             data=data,
             filepath=self.path,

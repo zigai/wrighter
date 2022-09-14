@@ -27,7 +27,7 @@ class OptionsBase(BaseModel):
     def print(self):
         conf = self.configured_options()
         if len(conf):
-            print(colored(self.__class__.__name__, color=FG.BRIGHT_BLUE) + ":")
+            print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
             pprint.pprint(conf)
             print("")
 
