@@ -12,7 +12,7 @@ from utils import to_dict
 
 class StorageInterface(ABC):
     @abstractmethod
-    def push(self) -> bool:
+    def push(self, data) -> bool:
         ...
 
     @property
@@ -66,19 +66,13 @@ class JsonDatabase(StorageInterface):
         data = to_dict(data)
         if not self._validate(data):
             return False
-        if self._is_empty or not self.file.exists:
-            with open(self.path, "w") as f:
-                json.dump([data], f, indent=self.indent, default=self.encoder)
-                f.write("\n")
-        else:
-            with open(self.path, "a+", encoding=self.encoding) as f:
-                f.seek(0, os.SEEK_END)
-                f.seek(f.tell() - 2, os.SEEK_SET)
-                f.truncate()
-                f.write(",\n")
-                json.dump(data, f, indent=self.indent, default=self.encoder)
-                f.write("]\n")
-        return True
+        fs.json_append(
+            data=data,
+            filepath=self.path,
+            encoding=self.encoding,
+            default=self.encoder,
+            indent=self.indent,
+        )
 
     @property
     def data(self) -> list[dict] | dict:
