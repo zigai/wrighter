@@ -5,9 +5,11 @@ from functools import cached_property
 from pathlib import Path
 from typing import Callable
 
-import pretty_errors
+try:
+    import pretty_errors
+except ImportError:
+    pass
 from loguru import logger as log
-from playwright._impl._api_structures import Cookie, Geolocation, ProxySettings, ViewportSize
 from playwright.sync_api import (
     Browser,
     BrowserContext,
@@ -324,3 +326,17 @@ class Wrigher:
     def display_config(self):
         self.display_options()
         self.display_events()
+
+
+__all__ = [
+    "log",
+    "LOGGER_ID",
+    "Wrigher",
+    "Browser",
+    "BrowserContext",
+    "BrowserType",
+    "Page",
+    "Playwright",
+    "Response",
+    "Route",
+]
