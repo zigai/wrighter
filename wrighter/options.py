@@ -17,7 +17,7 @@ from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
 
-from constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
+from wrighter.constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
 
 
 class OptionsBase(BaseModel):
@@ -39,7 +39,7 @@ class OptionsBase(BaseModel):
 
 
 class WrighterOptions(OptionsBase):
-    data_dir: str | Path = "."
+    data_dir: str | Path = Path(".").absolute()
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
@@ -166,10 +166,4 @@ __all__ = [
     "ContextOptions",
     "BrowserLaunchOptions",
     "StealthConfig",
-    "Geolocation",
-    "HttpCredentials",
-    "ProxySettings",
-    "StorageState",
-    "ViewportSize",
-    "Cookie",
 ]

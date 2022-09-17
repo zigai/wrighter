@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Mapping
 import jsonschema
 from stdl import fs
 
-from utils import to_dict
+from wrighter.utils import to_dict
 
 
 class StorageInterface(ABC):
@@ -15,7 +15,7 @@ class StorageInterface(ABC):
 
     @property
     @abstractmethod
-    def data(self):
+    def items(self):
         ...
 
     @abstractmethod
@@ -71,7 +71,7 @@ class JsonDatabase(StorageInterface):
         )
 
     @property
-    def data(self) -> list[dict] | dict:
+    def items(self) -> list[dict] | dict:
         return fs.json_load(self.path)
 
     def clear(self):
@@ -84,7 +84,7 @@ class JsonDatabase(StorageInterface):
             "path": str(self.path),
             "size": self.size,
             "schema": self.schema,
-            "items": len(self.data),
+            "items": len(self.items),
             "encoding": self.encoding,
         }
 

@@ -1,7 +1,6 @@
 import random
 import sys
 import time
-from functools import cached_property
 from pathlib import Path
 from typing import Callable
 
@@ -16,7 +15,6 @@ from playwright.sync_api import (
     BrowserType,
     Page,
     Playwright,
-    Response,
     Route,
     sync_playwright,
 )
@@ -25,16 +23,16 @@ from stdl import fs
 from stdl.logging import loguru_fmt
 from stdl.str_u import FG, colored
 
-from events import RouteEvent, event_description
-from options import BrowserLaunchOptions, ContextOptions, WrighterOptions
-from storage import JsonDatabase, StorageInterface
-from utils import load_pydatic_obj
+from wrighter.events import RouteEvent, event_description
+from wrighter.options import BrowserLaunchOptions, ContextOptions, WrighterOptions
+from wrighter.storage import JsonDatabase, StorageInterface
+from wrighter.utils import load_pydatic_obj
 
-log.remove(0)
+# log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="WARNING", format=loguru_fmt)
 
 
-class Wrigher:
+class SyncWrigher:
     def __init__(
         self,
         options: WrighterOptions | None = None,
@@ -193,14 +191,14 @@ class Wrigher:
             pages.extend(context.pages)
         return pages
 
-    @cached_property
+    @property
     def screenshot_dir(self) -> Path:
         screens_dir: Path = self.options.data_dir / "screenshots"  # type:ignore
         if not screens_dir.exists():
             screens_dir.mkdir()
         return screens_dir
 
-    @cached_property
+    @property
     def video_dir(self) -> Path:
         videos_dir: Path = self.options.data_dir / "videos"  # type:ignore
         if not videos_dir.exists():
@@ -331,12 +329,5 @@ class Wrigher:
 __all__ = [
     "log",
     "LOGGER_ID",
-    "Wrigher",
-    "Browser",
-    "BrowserContext",
-    "BrowserType",
-    "Page",
-    "Playwright",
-    "Response",
-    "Route",
+    "SyncWrigher",
 ]
