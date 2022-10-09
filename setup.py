@@ -8,11 +8,11 @@ REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(
     name="wrighter",
-    version="0.3.4",
+    version="0.3.0",
     description="",
     long_description=README,
     long_description_content_type="text/markdown",
-    author="Ziga Ivansek",
+    author="Žiga Ivanšek",
     author_email="ziga.ivansek@gmail.com",
     url="https://github.com/zigai/wrighter",
     license="MIT",
@@ -25,6 +25,5 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     packages=find_packages(),
-    package_dir={"wrighter": "wrighter"},
     install_requires=REQUIREMENTS,
 )
