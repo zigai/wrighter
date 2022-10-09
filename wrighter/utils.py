@@ -14,11 +14,9 @@ def load_pydatic_obj(val: str | Path | Any | Mapping | None, cls):
         return cls()
     elif isinstance(val, (str, Path)):
         return cls.parse_file(val)
-    elif isinstance(val, cls):
-        return val
     elif isinstance(val, Mapping):
         return cls(**val)
-    raise TypeError(type(val))
+    return val
 
 
 def to_dict(obj: str | Mapping | Iterable | BaseModel) -> dict | list[dict]:

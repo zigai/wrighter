@@ -19,7 +19,6 @@ from playwright.sync_api import (
     sync_playwright,
 )
 from playwright_stealth import StealthConfig, stealth_sync
-from stdl import fs
 from stdl.logging import loguru_fmt
 from stdl.str_u import FG, colored
 
@@ -28,8 +27,8 @@ from wrighter.options import BrowserLaunchOptions, ContextOptions, WrighterOptio
 from wrighter.storage import JsonDatabase, StorageInterface
 from wrighter.utils import load_pydatic_obj
 
-# log.remove(0)
-LOGGER_ID = log.add(sys.stdout, level="WARNING", format=loguru_fmt)
+log.remove(0)
+LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_fmt)
 
 
 class SyncWrigher:
@@ -48,7 +47,7 @@ class SyncWrigher:
         self.context_options: ContextOptions = load_pydatic_obj(context_options, ContextOptions)
         self.stealth_config = stealth_config
 
-        self.playwright = self.__start_sync_playwright()
+        self.playwright = self.__start_playwright()
 
         self.__resolve_options()
         self.storage: StorageInterface = storage
@@ -57,7 +56,7 @@ class SyncWrigher:
         self.on_response_events: list[Callable] = []
         self.on_request_events: list[Callable] = []
         self.on_request_finished_events: list[Callable] = []
-        self.on_page_events: list[Callable] = [self.__apply_timeout, self.__sync_page_apply_stealth]
+        self.on_page_events: list[Callable] = [self.__apply_timeout, self.__page_apply_stealth]
         self.route_events: list[RouteEvent] = [self.__maybe_block_resources]
 
         self.browser = self.__launch_browser()
@@ -68,7 +67,10 @@ class SyncWrigher:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
+        try:
+            self.stop()
+        except Exception as e:
+            pass
 
     def __resolve_options(self):
         if self.context_options.user_agent is None and self.options.force_user_agent:
@@ -76,7 +78,7 @@ class SyncWrigher:
             self.context_options.user_agent = ua
             log.info("Setting user agent.", force_user_agent=self.options.force_user_agent)
 
-    def __start_sync_playwright(self) -> Playwright:
+    def __start_playwright(self) -> Playwright:
         log.info("Starting Playwright")
         return sync_playwright().start()
 
@@ -144,13 +146,13 @@ class SyncWrigher:
 
     # --- Built-in events
     # On Page events:
-    def __sync_page_apply_stealth(self, page: Page):
-        """Apply stealh to page if 'stealth_config' is defined"""
+    def __page_apply_stealth(self, page: Page):
+        """[BUILT-IN] Apply stealh to page if 'stealth_config' is defined"""
         if self.options.stealth is not None:
             stealth_sync(page=page, config=self.stealth_config)  # type: ignore
 
     def __apply_timeout(self, page: Page):
-        """Timeout for loading a page defined in 'options.page_timeout_ms'"""
+        """[BUILT-IN] Timeout for loading a page defined in 'options.page_timeout_ms'"""
         page.set_default_timeout(self.options.page_timeout_ms)
 
     # Route events
@@ -159,7 +161,7 @@ class SyncWrigher:
         return RouteEvent(pattern="**/*", handler=self.__page_block_resources_func)
 
     def __page_block_resources_func(self, route: Route):
-        """Block requests with resource types defined in 'options.block_resources'"""
+        """[BUILT-IN] Block requests with resource types defined in 'options.block_resources'"""
         if self.options.block_resources is None:
             return route.continue_()
         if route.request.resource_type in self.options.block_resources:  # type:ignore
@@ -217,13 +219,12 @@ class SyncWrigher:
 
         Raises:
             RuntimeError: if you try to launch a new context in peristent mode. (if 'user_data_dir' is set)
-
         Returns:
             BrowserContext
         """
         if self._IS_PERSISTENT:
             raise RuntimeError("Cannot create contexts in persistent mode.")
-        context = self.browser.new_context(**self.context_options.dict())
+        context = self.browser.new_context(**self.context_options.dict())  # type: ignore
         context.on("page", lambda page: self.__page_apply_events(page))
         return context
 

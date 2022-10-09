@@ -21,6 +21,9 @@ from wrighter.constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
 
 
 class OptionsBase(BaseModel):
+    class Config:
+        validate_assignment = True
+
     def configured_options(self) -> dict[str, Any]:
         return {k: v for k, v in self.dict().items() if v is not None}
 
