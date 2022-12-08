@@ -15,6 +15,7 @@ PERMISSIONS = [
     "clipboard-write",
     "payment-handler",
 ]
+
 CHANNELS = [
     "chrome",
     "chrome-beta",
@@ -25,6 +26,7 @@ CHANNELS = [
     "msedge-dev",
     "msedge-canary",
 ]
+
 RESOURCE_TYPES = [
     "document",
     "stylesheet",
@@ -40,5 +42,63 @@ RESOURCE_TYPES = [
     "manifest",
     "other",
 ]
+
+BROWSER_LAUNCH_KEYS = [
+    "executable_path",
+    "channel",
+    "args",
+    "ignore_default_args",
+    "handle_sigint",
+    "handle_sigterm",
+    "handle_sighup",
+    "timeout",
+    "env",
+    "headless",
+    "devtools",
+    "proxy",
+    "downloads_path",
+    "slow_mo",
+    "traces_dir",
+    "chromium_sandbox",
+    "firefox_user_prefs",
+]
+
+CONTEXT_KEYS = [
+    "viewport",
+    "screen",
+    "no_viewport",
+    "ignore_https_errors",
+    "java_script_enabled",
+    "bypass_csp",
+    "user_agent",
+    "locale",
+    "timezone_id",
+    "geolocation",
+    "permissions",
+    "extra_http_headers",
+    "offline",
+    "http_credentials",
+    "device_scale_factor",
+    "is_mobile",
+    "has_touch",
+    "color_scheme",
+    "reduced_motion",
+    "forced_colors",
+    "accept_downloads",
+    "proxy",
+    "record_har_path",
+    "record_har_omit_content",
+    "record_video_dir",
+    "record_video_size",
+    "storage_state",
+    "base_url",
+    "strict_selectors",
+    "service_workers",
+    "record_har_url_filter",
+    "record_har_mode",
+    "record_har_content",
+]
+
+
 DEFAULT_RESOURCE_EXCLUSIONS = ["image", "stylesheet", "media", "font", "other"]
 BROWSERS = ["firefox", "chromium", "webkit"]
