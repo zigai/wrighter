@@ -1,82 +1,37 @@
 import json
-import pprint
+import os
 from pathlib import Path
-from typing import Any, Literal
+from pprint import pprint
+from typing import Any, Literal, Mapping
 
 from loguru import logger as log
 from playwright._impl._api_structures import (
-    Cookie,
     Geolocation,
     HttpCredentials,
     ProxySettings,
     StorageState,
     ViewportSize,
 )
-from playwright_stealth import StealthConfig
 from pydantic import BaseModel, validator
 from stdl import fs
+from stdl.log import br
 from stdl.str_u import FG, colored
 
-from wrighter.constants import BROWSERS, PERMISSIONS, RESOURCE_TYPES
+from wrighter.constants import *
 
 
-class OptionsBase(BaseModel):
+class WrighterOptions(BaseModel):
     class Config:
         validate_assignment = True
 
-    def configured_options(self) -> dict[str, Any]:
-        return {k: v for k, v in self.dict().items() if v is not None}
-
-    def print(self):
-        conf = self.configured_options()
-        if len(conf):
-            print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
-            pprint.pprint(conf)
-            print("")
-
-    def export(self, path: str | Path):
-        json_opts = self.json(exclude_unset=True, exclude_none=True)
-        json_data = json.loads(json_opts)
-        fs.json_dump(data=json_data, path=path)
-        log.info(f"{self.__class__.__name__} exported.", path=str(path))
-
-
-class WrighterOptions(OptionsBase):
-    data_dir: str | Path = Path(".").absolute()
+    data_dir: str | Path = os.path.abspath(os.getcwd())
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
-    user_data_dir: str | Path | None = None
     page_timeout_ms: int = 30000
+    user_data_dir: str | Path | None = None
     block_resources: list[str] | None = None
-
-    @validator("browser")
-    def __validate_browser(cls, v: str):
-        v = v.lower().strip()
-        if v == "chrome":
-            v = "chromium"
-        if v not in BROWSERS:
-            raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
-        return v
-
-    @validator("user_data_dir", "data_dir")
-    def __path_exists(cls, v):
-        fs.assert_paths_exist(str(v))
-        return Path(str(v)).absolute()
-
-    @validator("block_resources", each_item=True)
-    def __is_valid_resource(cls, v):
-        if v not in RESOURCE_TYPES:
-            raise ValueError(v)
-        return v
-
-
-class BrowserLaunchOptions(OptionsBase):
-    """
-    Browser launch options are documented at
-    https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
-    """
-
+    # Browser launch options
     executable_path: str | Path | None = None
     channel: str | None = None
     args: list[str] | None = None
@@ -94,19 +49,7 @@ class BrowserLaunchOptions(OptionsBase):
     traces_dir: str | Path | None = None
     chromium_sandbox: bool | None = None
     firefox_user_prefs: dict[str, str | float | bool] | None = None
-
-    @validator("executable_path", "downloads_path", "traces_dir")
-    def __path_exists(cls, v):
-        fs.assert_paths_exist(str(v))
-        return Path(str(v)).absolute()
-
-
-class ContextOptions(OptionsBase):
-    """
-    Context options are documented at
-    https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
-    """
-
+    # Context options
     viewport: ViewportSize | None = None
     screen: ViewportSize | None = None
     no_viewport: bool | None = None
@@ -141,11 +84,60 @@ class ContextOptions(OptionsBase):
     record_har_mode: Literal["full", "minimal"] | None = None
     record_har_content: Literal["attach", "embed", "omit"] | None = None
 
-    @validator("record_har_path", "record_video_dir", "storage_state")
-    def __path_exists(cls, v):
-        if isinstance(v, str) or isinstance(v, Path):
-            fs.assert_paths_exist(str(v))
-            return Path(str(v)).absolute()
+    @property
+    def browser_launch_options(self) -> dict[str, Any]:
+        """
+        Browser launch options are documented at
+        https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
+        """
+        return {k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS}
+
+    @property
+    def context_options(self) -> dict[str, Any]:
+        """
+        Context options are documented at
+        https://playwright.dev/python/docs/api/class-browser#browser-new-context
+        """
+        return {k: v for k, v in self.dict().items() if k in CONTEXT_KEYS}
+
+    @property
+    def persistent_context_options(self) -> dict[str, Any]:
+        opts = {
+            k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS or k in CONTEXT_KEYS
+        }
+        if "storage_state" in opts.keys():
+            log.warning(
+                "'storage_state' is ignored when launching a browser with a persitent context",
+                storage_state=opts["storage_state"],
+            )
+            del opts["storage_state"]
+        opts["user_data_dir"] = self.user_data_dir
+        return opts
+
+    def export(self, path: str | Path, *, full: bool = False):
+        excl_unset = False if full else True
+        excl_defaults = False if full else True
+        json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
+        fs.json_dump(data=json.loads(json_opts), path=path)
+
+    def print(self, *, full=False):
+        print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
+        pprint(self.dict(exclude_none=not full))
+        br()
+
+    @validator("block_resources", each_item=True)
+    def __validate_resource(cls, v):
+        if v not in RESOURCE_TYPES:
+            raise ValueError(v)
+        return v
+
+    @validator("browser")
+    def __validate_browser(cls, v: str):
+        v = v.lower().strip()
+        if v == "chrome":
+            v = "chromium"
+        if v not in BROWSERS:
+            raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
         return v
 
     @validator("permissions", each_item=True)
@@ -158,15 +150,39 @@ class ContextOptions(OptionsBase):
 
     @validator("viewport", "screen", "record_video_size")
     def __validate_viewport_size(cls, v: ViewportSize):
-        MIN_VIEWPORT_SIZE = 1
+        MIN_VIEWPORT_SIZE = 100
         if v["width"] < MIN_VIEWPORT_SIZE or v["height"] < MIN_VIEWPORT_SIZE:
             raise ValueError(v)
         return v
 
+    @validator(
+        "user_data_dir",
+        "data_dir",
+        "executable_path",
+        "downloads_path",
+        "traces_dir",
+        "record_har_path",
+        "record_video_dir",
+        "storage_state",
+    )
+    def __validate_path(cls, v):
+        fs.assert_paths_exist(v)
+        return os.path.abspath(str(v))
+
+
+def load_wrighter_opts(
+    opts: str | Path | Mapping[str, Any] | None | WrighterOptions
+) -> WrighterOptions:
+    if opts is None:
+        return WrighterOptions()
+    elif isinstance(opts, (str, Path)):
+        return WrighterOptions.parse_file(opts)
+    elif isinstance(opts, Mapping):
+        return WrighterOptions(**opts)
+    return opts
+
 
 __all__ = [
+    "load_wrighter_opts",
     "WrighterOptions",
-    "ContextOptions",
-    "BrowserLaunchOptions",
-    "StealthConfig",
 ]
