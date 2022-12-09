@@ -14,7 +14,6 @@ from playwright._impl._api_structures import (
 )
 from pydantic import BaseModel, validator
 from stdl import fs
-from stdl.log import br
 from stdl.str_u import FG, colored
 
 from wrighter.constants import *
@@ -41,7 +40,7 @@ class WrighterOptions(BaseModel):
     handle_sighup: bool | None = None
     timeout: float | None = None
     env: dict[str, str | float | bool] | None = None
-    headless: bool | None = None
+    headless: bool | None = False
     devtools: bool | None = None
     proxy: ProxySettings | None = None
     downloads_path: str | Path | None = None
@@ -123,7 +122,6 @@ class WrighterOptions(BaseModel):
     def print(self, *, full=False):
         print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
         pprint(self.dict(exclude_none=not full))
-        br()
 
     @validator("block_resources", each_item=True)
     def __validate_resource(cls, v):
