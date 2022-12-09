@@ -28,7 +28,7 @@ from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
 
 log.remove(0)
-LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_format)
+LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_format)  # type:ignore
 
 
 class SyncWrigher:
@@ -41,10 +41,10 @@ class SyncWrigher:
         self.stealth_config = stealth_config
         self.playwright = self.__start_playwright()
         self.__resolve_options()
+        self.plugins: list[Plugin] = []
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
         self.page = self.context.new_page()
-        self.plugins: list[Plugin] = []
 
     def __enter__(self):
         return self
@@ -64,7 +64,9 @@ class SyncWrigher:
         if self.is_persistent:
             opts = self.options.persistent_context_options
             browser_context = driver.launch_persistent_context(**opts)
-            # browser_context.on("page", lambda page: self.__page_apply_events(page))  # XXX
+            browser_context.on("page", lambda page: self.__page_apply_plugins(page))
+            for plugin in self.plugins:
+                plugin.apply_to_context(browser_context)
             return browser_context
         return driver.launch(**self.options.browser_launch_options)
 
@@ -81,7 +83,7 @@ class SyncWrigher:
                 f"Setting user agent to '{ua}'", force_user_agent=self.options.force_user_agent
             )
 
-    def __media_dir(self, folder_name: str) -> str:
+    def _media_dir(self, folder_name: str) -> str:
         directory = str(self.options.data_dir) + os.sep + folder_name
         if os.path.exists(directory):
             os.makedirs(directory)
@@ -129,11 +131,11 @@ class SyncWrigher:
 
     @property
     def screenshots_dir(self) -> str:
-        return self.__media_dir("screenshots")
+        return self._media_dir("screenshots")
 
     @property
     def videos_dir(self) -> str:
-        return self.__media_dir("videos")
+        return self._media_dir("videos")
 
     def stop(self) -> None:
         log.info("Stopping Playwright")
@@ -153,10 +155,28 @@ class SyncWrigher:
         if self.is_persistent:
             raise RuntimeError("Cannot create contexts in persistent mode.")
         context = self.browser.new_context(**self.options.context_options)  # type:ignore
-        # context.on("page", lambda page: self.__page_apply_events(page)) XXX
+        context.on("page", lambda page: self.__page_apply_plugins(page))
+        for plugin in self.plugins:
+            plugin.apply_to_context(context)
+            # if isinstance(plugin, ContextPl<ugin):
+            #    plugin.apply_to_context(context)
         return context
 
-    def add_plugin(self, plugin: Plugin) -> None:
+    def add_plugin(self, plugin: Plugin, *, existing=True) -> None:
+        self.plugins.append(plugin)
+        if existing:
+            for page in self.pages:
+                plugin.apply_to_page(page)
+            for ctx in self.contexts:
+                plugin.apply_to_context(ctx)
+            else:
+                raise TypeError(plugin)
+
+    def __page_apply_plugins(self, page: Page):
+        for plugin in self.plugins:
+            plugin.apply_to_page(page)
+
+    def __context_apply_plugins(self, context: BrowserContext):
         ...
 
     def latest_user_agent(self, browser_name: str) -> str:

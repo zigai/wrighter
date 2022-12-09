@@ -16,4 +16,4 @@ from playwright.sync_api import (
     Route,
 )
 
-from wrighter import constants, events, options, storage, sync_wrighter, utils
+from wrighter import constants, options, plugin, plugins, sync_wrighter
