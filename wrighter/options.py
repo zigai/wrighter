@@ -1,7 +1,6 @@
 import json
 import os
 from pathlib import Path
-from pprint import pprint
 from typing import Any, Literal, Mapping
 
 from loguru import logger as log
@@ -179,7 +178,9 @@ def load_wrighter_opts(
         return WrighterOptions.parse_file(opts)
     elif isinstance(opts, Mapping):
         return WrighterOptions(**opts)
-    return opts
+    elif isinstance(opts, WrighterOptions):
+        return opts
+    raise TypeError(type(opts))
 
 
 __all__ = [
