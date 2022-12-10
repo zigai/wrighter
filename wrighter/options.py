@@ -120,8 +120,10 @@ class WrighterOptions(BaseModel):
         fs.json_dump(data=json.loads(json_opts), path=path)
 
     def print(self, *, full=False):
-        print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
-        pprint(self.dict(exclude_none=not full))
+        print(colored("Options", color=FG.LIGHT_BLUE) + ":")
+        for k, v in self.dict(exclude_none=not full).items():
+            k = k.replace("_", " ").capitalize()
+            print(f"\t{k}: {v}")
 
     @validator("block_resources", each_item=True)
     def __validate_resource(cls, v):

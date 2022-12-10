@@ -35,6 +35,7 @@ class SyncWrigher:
     def __init__(
         self,
         options: str | Path | Mapping[str, Any] | None | WrighterOptions = None,
+        plugins: list[Plugin] | None = None,
         stealth_config: StealthConfig | None = None,
     ) -> None:
         self.options = load_wrighter_opts(options)
@@ -42,6 +43,8 @@ class SyncWrigher:
         self.playwright = self.__start_playwright()
         self.__resolve_options()
         self.plugins: list[Plugin] = []
+        if plugins:
+            self.plugins.extend(plugins)
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
         # self.page = self.context.new_page()
@@ -206,17 +209,15 @@ class SyncWrigher:
                 str(self.options.data_dir) + os.sep + fs.rand_filename("json", "wrighter_options")
             )
         self.options.export(path, full=full)
-        log.info("WrighterOptions exported", path=path)
+        log.info(f"{self.options.__class__.__name__} exported", path=path)
 
     def print_configuration(self):
-        self.options.print()
-        br()
-        self.print_plugins()
+        br(), self.options.print(), br(), self.print_plugins(), br()  # type:ignore
 
     def print_plugins(self):
         print(colored("Plugins", FG.LIGHT_BLUE) + ":")
-        for i in self.plugins:
-            print(i)
+        for plugin in self.plugins:
+            print(f"\t{plugin}")
         if not self.plugins:
             print("No plugins added.")
 
