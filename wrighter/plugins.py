@@ -47,6 +47,9 @@ class ResourceBlocker(Plugin):
                 raise ValueError(i)
         super().__init__()
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(url_pattern={self.url_pattern}, blocked_resources={self.blocked_resoruces})"
+
     def handler(self, route: Route):
         if route.request.resource_type in self.blocked_resoruces:
             return route.abort()

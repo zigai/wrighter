@@ -19,7 +19,7 @@ from playwright.sync_api import (
     Route,
     sync_playwright,
 )
-from playwright_stealth import StealthConfig, stealth_sync
+from playwright_stealth import StealthConfig
 from stdl import fs
 from stdl.log import br, loguru_format
 from stdl.str_u import FG, colored
@@ -44,7 +44,7 @@ class SyncWrigher:
         self.plugins: list[Plugin] = []
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
-        self.page = self.context.new_page()
+        # self.page = self.context.new_page()
 
     def __enter__(self):
         return self
@@ -65,7 +65,9 @@ class SyncWrigher:
             opts = self.options.persistent_context_options
             browser_context = driver.launch_persistent_context(**opts)
             browser_context.on("page", lambda page: self.__page_apply_plugins(page))
+            print("plugins:", len(self.plugins))
             for plugin in self.plugins:
+
                 plugin.apply_to_context(browser_context)
             return browser_context
         return driver.launch(**self.options.browser_launch_options)
@@ -158,8 +160,6 @@ class SyncWrigher:
         context.on("page", lambda page: self.__page_apply_plugins(page))
         for plugin in self.plugins:
             plugin.apply_to_context(context)
-            # if isinstance(plugin, ContextPl<ugin):
-            #    plugin.apply_to_context(context)
         return context
 
     def add_plugin(self, plugin: Plugin, *, existing=True) -> None:
@@ -169,15 +169,10 @@ class SyncWrigher:
                 plugin.apply_to_page(page)
             for ctx in self.contexts:
                 plugin.apply_to_context(ctx)
-            else:
-                raise TypeError(plugin)
 
     def __page_apply_plugins(self, page: Page):
         for plugin in self.plugins:
             plugin.apply_to_page(page)
-
-    def __context_apply_plugins(self, context: BrowserContext):
-        ...
 
     def latest_user_agent(self, browser_name: str) -> str:
         browser_name = browser_name.capitalize()
