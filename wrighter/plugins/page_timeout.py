@@ -12,3 +12,6 @@ class PageTimeout(Plugin):
 
     def context_on_page(self, page: Page) -> None:
         page.set_default_timeout(timeout=self.ms)
+
+
+__all__ = ["PageTimeout"]

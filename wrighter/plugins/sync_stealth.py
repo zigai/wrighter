@@ -13,3 +13,6 @@ class SyncStealth(Plugin):
 
     def context_on_page(self, page: Page) -> None:
         stealth_sync(page, config=self.stealth_config)
+
+
+__all__ = ["SyncStealth"]
