@@ -31,22 +31,24 @@ log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_format)  # type:ignore
 
 
-class SyncWrigher:
+class WrighterSync:
     def __init__(
         self,
         options: str | Path | Mapping[str, Any] | None | WrighterOptions = None,
         plugins: list[Plugin] | None = None,
         stealth_config: StealthConfig | None = None,
     ) -> None:
+        self.log = log
         self.options = load_wrighter_opts(options)
         self.stealth_config = stealth_config
         self.playwright = self.__start_playwright()
         self.__resolve_options()
-        self.plugins: list[Plugin] = []
+        self._plugins: list[Plugin] = []
         if plugins:
-            self.plugins.extend(plugins)
+            self._plugins.extend(plugins)
         self.browser = self.__launch_browser()
         self.context = self.__launch_context()
+
         # self.page = self.context.new_page()
 
     def __enter__(self):
@@ -59,7 +61,7 @@ class SyncWrigher:
             pass
 
     def __start_playwright(self) -> Playwright:
-        log.info("Starting Playwright")
+        self.log.info("Starting Playwright")
         return sync_playwright().start()
 
     def __launch_browser(self) -> Browser | BrowserContext:
@@ -68,9 +70,7 @@ class SyncWrigher:
             opts = self.options.persistent_context_options
             browser_context = driver.launch_persistent_context(**opts)
             browser_context.on("page", lambda page: self.__page_apply_plugins(page))
-            print("plugins:", len(self.plugins))
-            for plugin in self.plugins:
-
+            for plugin in self._plugins:
                 plugin.apply_to_context(browser_context)
             return browser_context
         return driver.launch(**self.options.browser_launch_options)
@@ -82,9 +82,9 @@ class SyncWrigher:
 
     def __resolve_options(self):
         if self.options.user_agent is None and self.options.force_user_agent:
-            ua = self.latest_user_agent(self.options.browser)
+            ua = self.get_user_agent(self.options.browser)
             self.options.user_agent = ua
-            log.info(
+            self.log.info(
                 f"Setting user agent to '{ua}'", force_user_agent=self.options.force_user_agent
             )
 
@@ -106,9 +106,7 @@ class SyncWrigher:
 
     def _provided_dir_or_default_dir(self, path: str | Path | None) -> str:
         """Return param as Path it it's provided. If not return 'options.data_dir'."""
-        if path is None:
-            return self.options.data_dir  # type: ignore
-        return str(path)
+        return str(path) if path is not None else self.options.data_dir  # type:ignore
 
     @property
     def is_persistent(self) -> bool:
@@ -143,7 +141,7 @@ class SyncWrigher:
         return self._media_dir("videos")
 
     def stop(self) -> None:
-        log.info("Stopping Playwright")
+        self.log.info("Stopping Playwright")
         self.context.close()
         self.browser.close()
         self.playwright.stop()
@@ -161,12 +159,12 @@ class SyncWrigher:
             raise RuntimeError("Cannot create contexts in persistent mode.")
         context = self.browser.new_context(**self.options.context_options)  # type:ignore
         context.on("page", lambda page: self.__page_apply_plugins(page))
-        for plugin in self.plugins:
+        for plugin in self._plugins:
             plugin.apply_to_context(context)
         return context
 
     def add_plugin(self, plugin: Plugin, *, existing=True) -> None:
-        self.plugins.append(plugin)
+        self._plugins.append(plugin)
         if existing:
             for page in self.pages:
                 plugin.apply_to_page(page)
@@ -174,10 +172,10 @@ class SyncWrigher:
                 plugin.apply_to_context(ctx)
 
     def __page_apply_plugins(self, page: Page):
-        for plugin in self.plugins:
+        for plugin in self._plugins:
             plugin.apply_to_page(page)
 
-    def latest_user_agent(self, browser_name: str) -> str:
+    def get_user_agent(self, browser_name: str) -> str:
         browser_name = browser_name.capitalize()
         if browser_name == "Chromium":
             browser_name = "Chrome"
@@ -186,22 +184,22 @@ class SyncWrigher:
     def sleep(self, lo: float, hi: float | None = None) -> float:
         if hi is None:
             time.sleep(lo)
-            log.info(f"Sleeping for {round(lo,2)}s")
+            self.log.info(f"Sleeping for {round(lo,2)}s")
             return lo
         if lo < hi:
             raise ValueError(f"Minimum sleep time is higher that maximum. {(lo,hi)}")
         t = random.uniform(lo, hi)
-        log.info(f"Sleeping for {round(t,2)}s")
+        self.log.info(f"Sleeping for {round(t,2)}s")
         time.sleep(t)
         return t
 
     def export_storage_state(self) -> None:
         """Export storage state for all contexts"""
-        for i, c in enumerate(self.contexts):
+        for i, ctx in enumerate(self.contexts):
             filename = str(i) + "." + fs.rand_filename("json", "storage_state")
             filepath = str(self.options.data_dir) + os.sep + filename
-            c.storage_state(path=filepath)
-            log.info(f"Context {i} saved", path=filepath)
+            ctx.storage_state(path=filepath)
+            self.log.info(f"Context {i} saved", path=filepath)
 
     def export_options(self, path: str | Path | None = None, *, full=False) -> None:
         if path is None:
@@ -209,21 +207,19 @@ class SyncWrigher:
                 str(self.options.data_dir) + os.sep + fs.rand_filename("json", "wrighter_options")
             )
         self.options.export(path, full=full)
-        log.info(f"{self.options.__class__.__name__} exported", path=path)
+        self.log.info(f"{self.options.__class__.__name__} exported", path=path)
 
     def print_configuration(self):
         br(), self.options.print(), br(), self.print_plugins(), br()  # type:ignore
 
     def print_plugins(self):
         print(colored("Plugins", FG.LIGHT_BLUE) + ":")
-        for plugin in self.plugins:
-            print(f"\t{plugin}")
-        if not self.plugins:
+        for plugin in self._plugins:
+            print(f"\t{plugin.description}")
+        if not self._plugins:
             print("No plugins added.")
 
 
 __all__ = [
-    "log",
-    "LOGGER_ID",
-    "SyncWrigher",
+    "WrighterSync",
 ]
