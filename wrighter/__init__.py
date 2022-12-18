@@ -17,3 +17,4 @@ from playwright.sync_api import (
 )
 
 from wrighter import constants, options, plugin, plugins, sync_wrighter
+from wrighter.sync_wrighter import SyncWrighter

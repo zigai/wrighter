@@ -41,7 +41,7 @@ class Plugin:
 
     @property
     def description(self):
-        return f"{self.__class__.__name__} - {self._description}"
+        return f"{self.__class__.__name__} - {self._description} "
 
     def _method_implemented(self, name: str) -> bool:
         if not "_on_" in name and not "_once_" in name:

@@ -100,5 +100,4 @@ CONTEXT_KEYS = [
 ]
 
 
-DEFAULT_RESOURCE_EXCLUSIONS = ["image", "stylesheet", "media", "font", "other"]
 BROWSERS = ["firefox", "chromium", "webkit"]

@@ -31,7 +31,7 @@ log.remove(0)
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_format)  # type:ignore
 
 
-class WrighterSync:
+class SyncWrighter:
     def __init__(
         self,
         options: str | Path | Mapping[str, Any] | None | WrighterOptions = None,
@@ -221,5 +221,5 @@ class WrighterSync:
 
 
 __all__ = [
-    "WrighterSync",
+    "SyncWrighter",
 ]
