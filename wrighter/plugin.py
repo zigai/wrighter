@@ -84,11 +84,25 @@ class Plugin:
             else:
                 raise ValueError(event.when)
 
+    def __remove(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
+        for event in self.events:
+            if event.exec_on != obj_type:
+                continue
+            obj.remove_listener(event.name, event.handler)
+
+    def remove_from_page(self, page: Page) -> None:
+        self.__remove(page, "page")
+
+    def remove_from_context(self, ctx: BrowserContext) -> None:
+        self.__remove(ctx, "context")
+
     def apply_to_page(self, page: Page) -> None:
         self.__apply(page, "page")
 
     def apply_to_context(self, ctx: BrowserContext) -> None:
         self.__apply(ctx, "context")
+
+    # Event skeletons for type hinting
 
     def page_on_load(self, page: Page) -> None:
         raise NotImplementedError

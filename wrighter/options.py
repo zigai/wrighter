@@ -26,7 +26,6 @@ class WrighterOptions(BaseModel):
     browser: str = "chromium"
     stealth: bool = False
     force_user_agent: bool = True
-    page_timeout_ms: int = 30000
     user_data_dir: str | Path | None = None
     block_resources: list[str] | None = None
     # Browser launch options

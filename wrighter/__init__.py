@@ -6,15 +6,8 @@ from playwright._impl._api_structures import (
     StorageState,
     ViewportSize,
 )
-from playwright.sync_api import (
-    Browser,
-    BrowserContext,
-    BrowserType,
-    Page,
-    Playwright,
-    Response,
-    Route,
-)
 
-from wrighter import constants, options, plugin, plugins, sync_wrighter
+from wrighter import async_wrighter, constants, core, options, plugin, plugins, sync_wrighter
+from wrighter.async_wrighter import SyncWrighter
+from wrighter.plugin import Plugin
 from wrighter.sync_wrighter import SyncWrighter
