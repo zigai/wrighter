@@ -1,5 +1,5 @@
 # Wrighter
-Web scraping/browser automation framework built on Playwright.
+Web scraping/browser automation framework built on [Playwright](https://playwright.dev/python/).
 # Features
 - sync and async API
 - plugin system
