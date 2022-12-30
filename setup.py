@@ -9,7 +9,7 @@ REQUIREMENTS = (HERE / "requirements.txt").read_text()
 setup(
     name="wrighter",
     version="0.1.0",
-    description="Web scraping framework built on Playwright",
+    description="Web scraping/browser automation framework built on Playwright",
     long_description=README,
     long_description_content_type="text/markdown",
     author="Žiga Ivanšek",
