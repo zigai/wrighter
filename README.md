@@ -1,10 +1,10 @@
 # Wrighter
-Web scraping framework built on Playwright.
+Web scraping/browser automation framework built on Playwright.
 # Features
 - sync and async API
 - plugin system
 # Installation
-#### Using pip
+#### From PyPi
 ```
 pip install wrighter
 ```
@@ -13,4 +13,4 @@ pip install wrighter
 pip install git+https://github.com/zigai/wrighter.git
 ```
 # License
-[MIT License](https://github.com/zigai/wrighter/blob/master/LICENSE). 
+[MIT License](https://github.com/zigai/wrighter/blob/master/LICENSE)
