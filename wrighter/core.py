@@ -104,7 +104,7 @@ class WrighterCore:
 
     def _media_dir(self, folder_name: str) -> str:
         directory = str(self.options.data_dir) + SEP + folder_name
-        if os.path.exists(directory):
+        if not os.path.exists(directory):
             os.makedirs(directory)
         return directory
 

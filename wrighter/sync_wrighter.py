@@ -91,7 +91,7 @@ class SyncWrighter(WrighterCore):
             time.sleep(lo)
             self.log.info(f"Sleeping for {round(lo,2)}s")
             return lo
-        if lo < hi:
+        if lo > hi:
             raise ValueError(f"Minimum sleep time is higher that maximum. {(lo,hi)}")
         t = random.uniform(lo, hi)
         self.log.info(f"Sleeping for {round(t,2)}s")
