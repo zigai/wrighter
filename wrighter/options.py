@@ -24,10 +24,7 @@ class WrighterOptions(BaseModel):
 
     data_dir: str | Path = os.path.abspath(os.getcwd())
     browser: str = "chromium"
-    stealth: bool = False
     force_user_agent: bool = True
-    user_data_dir: str | Path | None = None
-    block_resources: list[str] | None = None
     # Browser launch options
     executable_path: str | Path | None = None
     channel: str | None = None
