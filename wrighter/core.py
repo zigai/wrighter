@@ -40,16 +40,38 @@ class WrighterCore:
             self._plugins.extend(plugins)
 
     def export_storage_state(self) -> None:
-        """Export storage state for all contexts"""
+
+        """
+        Exports the storage state for all contexts.
+
+        The storage state for each context is saved to a JSON file in the default data directory.
+        The file name includes an index indicating the context it belongs to.
+
+        Returns:
+            None
+        """
+
         for i, ctx in enumerate(self.contexts):
-            filename = str(i) + "." + fs.rand_filename("json", "storage_state")
+            filename = str(i) + "." + fs.rand_filename("storage_state", "json")
             filepath = str(self.options.data_dir) + SEP + filename
             ctx.storage_state(path=filepath)
             self.log.info(f"Context {i} saved", path=filepath)
 
     def export_options(self, path: str | Path | None = None, *, full=False) -> None:
+        """
+        Exports the `PlaywrightOptions` object to a JSON file.
+
+        Args:
+            path (str | Path, optional): The path to the file to save the options to.
+                If not provided, a randomly generated filename in the default data directory will be used.
+            full (bool, optional): If `True`, exports all options, including default values. Defaults to `False`.
+
+        Returns:
+            None
+        """
+
         if path is None:
-            path = str(self.options.data_dir) + SEP + fs.rand_filename("json", "wrighter_options")
+            path = str(self.options.data_dir) + SEP + fs.rand_filename("wrighter_options", "json")
         self.options.export(path, full=full)
         self.log.info(f"{self.options.__class__.__name__} exported", path=path)
 
@@ -64,14 +86,37 @@ class WrighterCore:
             print("No plugins added.")
 
     def add_plugin(self, plugin: Plugin, *, existing=True) -> None:
+        """
+        Adds a plugin to the current instance.
+
+        Args:
+            plugin (Plugin): The plugin to add.
+            existing (bool, optional): If `True`, adds the plugin to all existing pages and contexts.
+                Defaults to `True`.
+
+        Returns:
+            None
+        """
+
         self._plugins.append(plugin)
         if existing:
             for page in self.pages:
-                plugin.apply_to_page(page)
+                plugin.add_to_page(page)
             for ctx in self.contexts:
-                plugin.apply_to_context(ctx)
+                plugin.add_to_context(ctx)
 
     def remove_plugin(self, plugin: Plugin, *, existing=True) -> None:
+        """
+        Remove a plugin from the current instance.
+
+        Args:
+            plugin (Plugin): The plugin to remove.
+            existing (bool, optional): If `True`, remove the plugin from all existing pages and contexts.
+                Defaults to `True`.
+
+        Returns:
+            None
+        """
         self._plugins.remove(plugin)
         if existing:
             for page in self.pages:
@@ -80,15 +125,40 @@ class WrighterCore:
                 plugin.remove_from_context(ctx)
 
     def remove_all_plugins(self, *, existing=True) -> None:
+        """
+        Remove all plugin from the current instance.
+
+        Args:
+            existing (bool, optional): If `True`, alose remove all the plugin all from existing pages and contexts.
+                Defaults to `True`.
+
+        Returns:
+            None
+        """
         for plugin in self._plugins:
             self.remove_plugin(plugin, existing=existing)
         self._plugins.clear()
 
-    def _page_apply_plugins(self, page: Page):
+    def _page_add_plugins(self, page: Page):
+        """Add all plugins to a page"""
         for plugin in self._plugins:
-            plugin.apply_to_page(page)
+            plugin.add_to_page(page)
 
     def get_user_agent(self, browser_name: str) -> str:
+        """
+        Args:
+            browser_name: str - The name of the web browser. Case insensitive.
+                Possible values: 'Safari', 'Chrome', 'Edge', 'Firefox'
+
+        Returns:
+            str - The user agent string for the specified web browser.
+
+        Example:
+        --------
+        >>> get_user_agent("chrome")
+        >>> "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+
+        """
         browser_name = browser_name.capitalize()
         if browser_name == "Chromium":
             browser_name = "Chrome"
@@ -103,12 +173,24 @@ class WrighterCore:
             )
 
     def _media_dir(self, folder_name: str) -> str:
+        """
+        Return the path to the media directory with the specified name.
+        Full path depends on the `data_dir` option in options.
+        If the directory does not exist, it is created.
+
+        Args:
+            folder_name (str): The name of the folder to store the media files in.
+
+        Returns:
+            str: The path to the media directory.
+        """
+
         directory = str(self.options.data_dir) + SEP + folder_name
         if not os.path.exists(directory):
             os.makedirs(directory)
         return directory
 
-    def _get_browser_type(self, browser: str) -> BrowserType:
+    def _get_driver(self, browser: str) -> BrowserType:
         match browser.lower():
             case "chromium":
                 return self.playwright.chromium
@@ -116,16 +198,23 @@ class WrighterCore:
                 return self.playwright.firefox
             case "webkit":
                 return self.playwright.webkit
-        return self.playwright.chromium
+            case _:
+                raise ValueError(f"Invalid browser name: {browser}")
 
-    def _provided_dir_or_default_dir(self, path: str | Path | None) -> str:
-        """Return param as Path it it's provided. If not return 'options.data_dir'."""
+    def _provided_dir_or_default(self, path: str | Path | None) -> str:
+        """Returns the provided directory or the default data directory."""
         return str(path) if path is not None else self.options.data_dir  # type:ignore
 
     @property
     def is_persistent(self) -> bool:
         """
-        Returns True if user_data_dir is set in WrighterOptions
+        Returns whether the browser context is persistent.
+
+        A persistent browser context saves state across sessions.
+        It is created by setting the `user_data_dir` option in the `PlaywrightOptions` object.
+
+        Returns:
+            bool: `True` if the browser context is persistent, `False` otherwise.
         """
         return self.options.user_data_dir is not None
 
@@ -140,7 +229,7 @@ class WrighterCore:
 
     @property
     def pages(self) -> list[Page]:
-        """Returns pages open across all contexts."""
+        """Returns open pages across all contexts."""
         pages = []
         for context in self.contexts:
             pages.extend(context.pages)
@@ -148,10 +237,27 @@ class WrighterCore:
 
     @property
     def screenshots_dir(self) -> str:
+        """
+        Return the path to the screenshots directory.
+        Full path depends on the `data_dir` option in options.
+        If the directory does not exist, it is created.
+
+        Returns:
+            str: The path to the media directory.
+        """
+
         return self._media_dir("screenshots")
 
     @property
     def videos_dir(self) -> str:
+        """
+        Return the path to the videos directory.
+        Full path depends on the `data_dir` option in options.
+        If the directory does not exist, it is created.
+
+        Returns:
+            str: The path to the media directory.
+        """
         return self._media_dir("videos")
 
 

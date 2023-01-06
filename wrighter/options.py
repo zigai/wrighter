@@ -24,6 +24,7 @@ class WrighterOptions(BaseModel):
 
     data_dir: str | Path = os.path.abspath(os.getcwd())
     browser: str = "chromium"
+    user_data_dir: str | Path | None = None
     force_user_agent: bool = True
     # Browser launch options
     executable_path: str | Path | None = None
@@ -109,8 +110,8 @@ class WrighterOptions(BaseModel):
         return opts
 
     def export(self, path: str | Path, *, full: bool = False):
-        excl_unset = False if full else True
-        excl_defaults = False if full else True
+        excl_unset = not full
+        excl_defaults = not full
         json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
         fs.json_dump(data=json.loads(json_opts), path=path)
 
@@ -119,12 +120,6 @@ class WrighterOptions(BaseModel):
         for k, v in self.dict(exclude_none=not full).items():
             k = k.replace("_", " ").capitalize()
             print(f"\t{k}: {v}")
-
-    @validator("block_resources", each_item=True)
-    def __validate_resource(cls, v):
-        if v not in RESOURCE_TYPES:
-            raise ValueError(v)
-        return v
 
     @validator("browser")
     def __validate_browser(cls, v: str):

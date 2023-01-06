@@ -5,7 +5,7 @@ from wrighter.plugin import Plugin
 
 
 class AsyncStealth(Plugin):
-    """Apply stealh to all pages"""
+    """Apply stealth to pages"""
 
     def __init__(self, stealth_config: StealthConfig | None = None) -> None:
         self.stealth_config = stealth_config if stealth_config is not None else StealthConfig()

@@ -73,7 +73,7 @@ class Plugin:
             events.append(event)
         return events
 
-    def __apply(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
+    def __add(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
         for event in self.events:
             if event.exec_on != obj_type:
                 continue
@@ -96,13 +96,13 @@ class Plugin:
     def remove_from_context(self, ctx: BrowserContext) -> None:
         self.__remove(ctx, "context")
 
-    def apply_to_page(self, page: Page) -> None:
-        self.__apply(page, "page")
+    def add_to_page(self, page: Page) -> None:
+        self.__add(page, "page")
 
-    def apply_to_context(self, ctx: BrowserContext) -> None:
-        self.__apply(ctx, "context")
+    def add_to_context(self, ctx: BrowserContext) -> None:
+        self.__add(ctx, "context")
 
-    # Event skeletons for type hinting
+    # All possible events. For type hinting.
 
     def page_on_load(self, page: Page) -> None:
         raise NotImplementedError

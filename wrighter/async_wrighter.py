@@ -32,8 +32,12 @@ class AsyncWrighter(WrighterCore):
         super().__init__(options, plugins)
 
     async def start(self):
+        """
+        `Must be called directly after instantiation.`
+        Starts the Playwright instance, launches a browser, and creates a browser context.
+        """
         self.playwright: Playwright = await self.__start_playwright()
-        self.browser: Browser | BrowserContext = await self.__launch_browser()
+        self.browser: Browser | BrowserContext = await self._launch_browser()
         self.context: BrowserContext = await self.__launch_context()
         self._resolve_options()
 
@@ -43,14 +47,23 @@ class AsyncWrighter(WrighterCore):
     async def __aenter__(self):
         return self
 
-    async def __launch_browser(self) -> Browser | BrowserContext:
-        driver = self._get_browser_type(self.options.browser)
+    async def _launch_browser(self) -> Browser | BrowserContext:
+        """
+        Launches a browser or persistent browser context.
+        If the Wrighter instance is persistent (if 'user_data_dir' is set),
+        this method launches and returns a persistent browser context.
+        Otherwise, it launches and returns a regular browser.
+
+        Returns:
+            The launched browser or browser context.
+        """
+        driver = self._get_driver(self.options.browser)
         if self.is_persistent:
             opts = self.options.persistent_context_options
             browser_context = await driver.launch_persistent_context(**opts)
-            browser_context.on("page", lambda page: self._page_apply_plugins(page))
+            browser_context.on("page", lambda page: self._page_add_plugins(page))
             for plugin in self._plugins:
-                plugin.apply_to_context(browser_context)
+                plugin.add_to_context(browser_context)
             return browser_context
         return await driver.launch(**self.options.browser_launch_options)
 
@@ -71,9 +84,9 @@ class AsyncWrighter(WrighterCore):
         if self.is_persistent:
             raise RuntimeError("Cannot create contexts in persistent mode.")
         context = await self.browser.new_context(**self.options.context_options)  # type:ignore
-        context.on("page", lambda page: self._page_apply_plugins(page))
+        context.on("page", lambda page: self._page_add_plugins(page))
         for plugin in self._plugins:
-            plugin.apply_to_context(context)
+            plugin.add_to_context(context)
         return context
 
     async def stop(self):
@@ -89,6 +102,20 @@ class AsyncWrighter(WrighterCore):
             pass
 
     async def sleep(self, lo: float, hi: float | None = None) -> float:
+        """
+        Sleeps for a random duration within a specified range.
+
+        Args:
+            lo (float): The lower bound of the sleep duration range (inclusive).
+            hi (float, optional): The upper bound of the sleep duration range (inclusive). If not provided, the function will sleep for the exact duration specified by `lo`.
+
+        Returns:
+            float: The actual sleep duration.
+
+        Raises:
+            ValueError: If `hi` is provided and `lo` is greater than `hi`.
+        """
+
         if hi is None:
             await asyncio.sleep(lo)
             self.log.info(f"Sleeping for {round(lo,2)}s")

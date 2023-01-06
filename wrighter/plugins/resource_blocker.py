@@ -9,7 +9,7 @@ DEFAULT_RESOURCE_EXCLUSIONS = ["image", "stylesheet", "media", "font", "other"]
 
 
 class ResourceBlocker(Plugin):
-    """Block requests with specified resource types"""
+    """A plugin that blocks requests with specified resource types. For example, you can block all images, stylesheets, fonts, etc. from being loaded on a page."""
 
     def __init__(
         self,

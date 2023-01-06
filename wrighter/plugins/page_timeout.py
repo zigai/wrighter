@@ -4,7 +4,7 @@ from wrighter.plugin import Plugin
 
 
 class PageTimeout(Plugin):
-    """Set default timeout for all pages"""
+    """A plugin that sets the default timeout to a page"""
 
     def __init__(self, ms: float) -> None:
         self.ms = ms

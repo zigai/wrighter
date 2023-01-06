@@ -5,24 +5,30 @@ from wrighter.plugin import Plugin, Request, Response
 HTTP_STATUS_COLORS = {"2": BG.GREEN, "3": BG.BLUE, "4": BG.RED, "5": BG.YELLOW}
 
 
+def colorize_status_code(code: int) -> str:
+    code_str = str(code)
+    return colored(code_str, HTTP_STATUS_COLORS.get(code_str[0], FG.WHITE))
+
+
 class NetworkLogger(Plugin):
-    """Network events logger"""
+    """A plugin that logs network events such as responses and requests."""
 
     def __init__(self, response_codes: list[int] | None = None, requests: bool = True) -> None:
+        """
+        Args:
+            response_codes (list[int], optional): A list of HTTP status codes to log. If not provided, all status codes will be logged.
+            requests (bool, optional): Whether to log requests. Defaults to `True`.
+        """
         self.response_codes = (
             response_codes if response_codes is not None else list(range(100, 600))
         )
         self.requests = requests
         super().__init__()
 
-    def colorize_status_code(self, code: int) -> str:
-        code_str = str(code)
-        return colored(code_str, HTTP_STATUS_COLORS.get(code_str[0], FG.WHITE))
-
     def page_on_response(self, response: Response) -> None:
         if response.status not in self.response_codes:
             return
-        status = self.colorize_status_code(response.status)
+        status = colorize_status_code(response.status)
         print(f"{colored('<<',FG.WHITE,style=ST.BOLD)} {status} | {response.url}")
 
     def page_on_request(self, request: Request) -> None:
