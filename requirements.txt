@@ -1,5 +1,5 @@
 loguru>=0.6.0
 playwright>=1.29.0
 playwright_stealth>=1.0.5
-stdl>=0.4.0
+stdl==0.4.0
 pydantic>=1.10.3
