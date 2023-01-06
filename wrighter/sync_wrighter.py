@@ -1,3 +1,8 @@
+import random
+import time
+from pathlib import Path
+from typing import Any, Mapping
+
 from playwright.sync_api import (
     Browser,
     BrowserContext,
@@ -11,15 +16,6 @@ from playwright.sync_api import (
 from wrighter.core import WrighterCore
 from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
-
-try:
-    import pretty_errors
-except ImportError:
-    pass
-import random
-import time
-from pathlib import Path
-from typing import Any, Mapping
 
 
 class SyncWrighter(WrighterCore):
@@ -122,9 +118,4 @@ class SyncWrighter(WrighterCore):
         return t
 
 
-if __name__ == "__main__":
-    w = SyncWrighter()
-    page = w.context.new_page()
-    page.goto("https://www.rtvslo.si/")
-    page.wait_for_load_state()
-    w.sleep(3)
+__all__ = ["SyncWrighter"]

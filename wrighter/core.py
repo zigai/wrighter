@@ -1,3 +1,9 @@
+import os
+import sys
+from pathlib import Path
+from typing import Any, Mapping
+
+from loguru import logger as log
 from playwright.async_api import Browser as AsyncBrowser
 from playwright.async_api import BrowserContext as AsyncBrowserContext
 from playwright.sync_api import Browser, BrowserContext, BrowserType, Page, Playwright
@@ -8,17 +14,6 @@ from stdl.str_u import FG, colored
 
 from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
-
-try:
-    import pretty_errors
-except ImportError:
-    pass
-import os
-import sys
-from pathlib import Path
-from typing import Any, Mapping
-
-from loguru import logger as log
 
 log.remove()
 LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_format)  # type:ignore
@@ -234,6 +229,10 @@ class WrighterCore:
         for context in self.contexts:
             pages.extend(context.pages)
         return pages
+
+    @property
+    def data_dir(self) -> str:
+        return self.options.data_dir  # type:ignore
 
     @property
     def screenshots_dir(self) -> str:

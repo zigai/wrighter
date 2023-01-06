@@ -1,7 +1,3 @@
-try:
-    import pretty_errors
-except ImportError:
-    pass
 import asyncio
 import random
 from pathlib import Path
@@ -128,6 +124,4 @@ class AsyncWrighter(WrighterCore):
         return t
 
 
-__all__ = [
-    "AsyncWrighter",
-]
+__all__ = ["AsyncWrighter"]

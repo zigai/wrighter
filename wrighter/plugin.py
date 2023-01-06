@@ -61,7 +61,7 @@ class Plugin:
         return True
 
     @property
-    def events(self) -> list[Event]:
+    def _events(self) -> list[Event]:
         events = []
         for func_name in dir(self):
             if not self._method_implemented(func_name):
@@ -74,7 +74,7 @@ class Plugin:
         return events
 
     def __add(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
-        for event in self.events:
+        for event in self._events:
             if event.exec_on != obj_type:
                 continue
             if event.when == "on":
@@ -85,7 +85,7 @@ class Plugin:
                 raise ValueError(event.when)
 
     def __remove(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
-        for event in self.events:
+        for event in self._events:
             if event.exec_on != obj_type:
                 continue
             obj.remove_listener(event.name, event.handler)
@@ -265,3 +265,6 @@ class Plugin:
 
     def context_once_serviceworker(self, worker: Worker) -> None:
         raise NotImplementedError
+
+
+__all__ = ["Plugin"]

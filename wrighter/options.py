@@ -4,13 +4,9 @@ from pathlib import Path
 from typing import Any, Literal, Mapping
 
 from loguru import logger as log
-from playwright._impl._api_structures import (
-    Geolocation,
-    HttpCredentials,
-    ProxySettings,
-    StorageState,
-    ViewportSize,
-)
+from playwright._impl._api_structures import (Geolocation, HttpCredentials,
+                                              ProxySettings, StorageState,
+                                              ViewportSize)
 from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
@@ -82,7 +78,8 @@ class WrighterOptions(BaseModel):
     @property
     def browser_launch_options(self) -> dict[str, Any]:
         """
-        Browser launch options are documented at
+        Returns the options for launching a browser.
+        These options are documented at:
         https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
         """
         return {k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS}
@@ -90,13 +87,19 @@ class WrighterOptions(BaseModel):
     @property
     def context_options(self) -> dict[str, Any]:
         """
-        Context options are documented at
+        Returns the options for launching a context.
+        These options are documented at:
         https://playwright.dev/python/docs/api/class-browser#browser-new-context
         """
         return {k: v for k, v in self.dict().items() if k in CONTEXT_KEYS}
 
     @property
     def persistent_context_options(self) -> dict[str, Any]:
+        """
+        Returns the options for launching a persistent context.
+        These options are documented at:
+        https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch-persistent-context
+        """
         opts = {
             k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS or k in CONTEXT_KEYS
         }
@@ -110,6 +113,16 @@ class WrighterOptions(BaseModel):
         return opts
 
     def export(self, path: str | Path, *, full: bool = False):
+        """
+        Exports the `PlaywrightOptions` object to a JSON file.
+
+        Args:
+            path (Union[str, Path]): The path to the file to save the options to.
+            full (bool, optional): If `True`, exports all options, including default values. Defaults to `False`.
+
+        Returns:
+            None
+        """
         excl_unset = not full
         excl_defaults = not full
         json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
@@ -163,6 +176,13 @@ class WrighterOptions(BaseModel):
 def load_wrighter_opts(
     opts: str | Path | Mapping[str, Any] | None | WrighterOptions
 ) -> WrighterOptions:
+    """
+    - If the input is `None`, returns a default `WrighterOptions` object.
+    - If the input is a string or `Path`, returns a `WrighterOptions` object constructed from the parse file.
+    - If the input is a mapping, returns a `WrighterOptions` object constructed from the mapping.
+    - If the input is already a `WrighterOptions` object, returns the object itself.
+    - Otherwise, raises a `TypeError`.
+    """
     if opts is None:
         return WrighterOptions()
     elif isinstance(opts, (str, Path)):
