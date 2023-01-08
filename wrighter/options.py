@@ -4,9 +4,13 @@ from pathlib import Path
 from typing import Any, Literal, Mapping
 
 from loguru import logger as log
-from playwright._impl._api_structures import (Geolocation, HttpCredentials,
-                                              ProxySettings, StorageState,
-                                              ViewportSize)
+from playwright._impl._api_structures import (
+    Geolocation,
+    HttpCredentials,
+    ProxySettings,
+    StorageState,
+    ViewportSize,
+)
 from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
@@ -14,9 +18,35 @@ from stdl.str_u import FG, colored
 from wrighter.constants import *
 
 
-class WrighterOptions(BaseModel):
+class BaseOptions(BaseModel):
     class Config:
         validate_assignment = True
+        arbitrary_types_allowed = True
+
+    def export(self, path: str | Path, *, full: bool = False):
+        """
+        Exports the `Options` object to a JSON file.
+
+        Args:
+            path (Union[str, Path]): The path to the file to save the options to.
+            full (bool, optional): If `True`, exports all options, including default values. Defaults to `False`.
+
+        Returns:
+            None
+        """
+        excl_unset = not full
+        excl_defaults = not full
+        json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
+        fs.json_dump(data=json.loads(json_opts), path=path)
+
+    def print(self, *, full=False):
+        print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
+        for k, v in self.dict(exclude_none=not full).items():
+            k = k.replace("_", " ").capitalize()
+            print(f"\t{k}: {v}")
+
+
+class WrighterOptions(BaseOptions):
 
     data_dir: str | Path = os.path.abspath(os.getcwd())
     browser: str = "chromium"
@@ -111,28 +141,6 @@ class WrighterOptions(BaseModel):
             del opts["storage_state"]
         opts["user_data_dir"] = self.user_data_dir
         return opts
-
-    def export(self, path: str | Path, *, full: bool = False):
-        """
-        Exports the `PlaywrightOptions` object to a JSON file.
-
-        Args:
-            path (Union[str, Path]): The path to the file to save the options to.
-            full (bool, optional): If `True`, exports all options, including default values. Defaults to `False`.
-
-        Returns:
-            None
-        """
-        excl_unset = not full
-        excl_defaults = not full
-        json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
-        fs.json_dump(data=json.loads(json_opts), path=path)
-
-    def print(self, *, full=False):
-        print(colored("Options", color=FG.LIGHT_BLUE) + ":")
-        for k, v in self.dict(exclude_none=not full).items():
-            k = k.replace("_", " ").capitalize()
-            print(f"\t{k}: {v}")
 
     @validator("browser")
     def __validate_browser(cls, v: str):
