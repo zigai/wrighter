@@ -13,11 +13,16 @@ def colorize_status_code(code: int) -> str:
 class NetworkLogger(Plugin):
     """A plugin that logs network events such as responses and requests."""
 
-    def __init__(self, response_codes: list[int] | None = None, requests: bool = True) -> None:
+    def __init__(
+        self,
+        response_codes: list[int] | None = None,
+        requests: bool = True,
+    ) -> None:
         """
         Args:
             response_codes (list[int], optional): A list of HTTP status codes to log. If not provided, all status codes will be logged.
             requests (bool, optional): Whether to log requests. Defaults to `True`.
+            theme (dict, optional): A dictionary of colors to use for the log messages.
         """
         self.response_codes = response_codes or list(range(100, 600))
         self.requests = requests
@@ -27,13 +32,13 @@ class NetworkLogger(Plugin):
         if response.status not in self.response_codes:
             return
         status = colorize_status_code(response.status)
-        print(f"{colored('<<',FG.WHITE,style=ST.BOLD)} {status} | {response.url}")
+        print(f"{colored('<<', style=ST.BOLD)} {status} | {response.url}")
 
     def page_on_request(self, request: Request) -> None:
         if not self.requests:
             return
         print(
-            f"{colored('>>',FG.WHITE,style=ST.BOLD)} {colored(request.method,FG.BLACK,BG.WHITE)} | {request.url}"
+            f"{colored('>>', style=ST.BOLD)} {colored(request.method,FG.BLACK,BG.WHITE)} | {request.url}"
         )
 
 
