@@ -65,9 +65,9 @@ class Plugin:
         for event_name in dir(self):
             if not self._method_implemented(event_name):
                 continue
-            exec_on, when, event_name = event_name.split("_")
+            exec_on, when, func_name = event_name.split("_")
             event = Event(
-                name=event_name,
+                name=func_name,
                 handler=getattr(self, event_name),
                 obj_type=exec_on,  # type:ignore
                 listener_type=when,  # type:ignore
