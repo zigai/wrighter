@@ -21,11 +21,13 @@ from playwright.sync_api import (
 class Event:
     name: str
     handler: Callable
-    exec_on: Literal["page", "context"]
-    when: Literal["on", "once"]
+    obj_type: Literal["page", "context"]
+    listener_type: Literal["on", "once"]
 
     def __repr__(self) -> str:
-        return f"{self.__class__.name}<{self.exec_on}.{self.when}('{self.name}', handler)>"
+        return (
+            f"{self.__class__.name}<{self.obj_type}.{self.listener_type}('{self.name}', handler)>"
+        )
 
 
 class Plugin:
@@ -44,11 +46,8 @@ class Plugin:
         return f"{self.__class__.__name__} - {self._description} "
 
     def _method_implemented(self, name: str) -> bool:
-        if not "_on_" in name and not "_once_" in name:
+        if not "_on_" in name and not "_once_" in name or name.startswith("_pw"):
             return False
-        if name.startswith("_pw"):
-            return False
-
         try:
             event = getattr(self, name, None)
             if event is None:
@@ -63,30 +62,33 @@ class Plugin:
     @property
     def _events(self) -> list[Event]:
         events = []
-        for func_name in dir(self):
-            if not self._method_implemented(func_name):
+        for event_name in dir(self):
+            if not self._method_implemented(event_name):
                 continue
-            exec_on, when, event_name = func_name.split("_")
+            exec_on, when, event_name = event_name.split("_")
             event = Event(
-                name=event_name, handler=getattr(self, func_name), exec_on=exec_on, when=when
+                name=event_name,
+                handler=getattr(self, event_name),
+                obj_type=exec_on,  # type:ignore
+                listener_type=when,  # type:ignore
             )
             events.append(event)
         return events
 
     def __add(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
         for event in self._events:
-            if event.exec_on != obj_type:
+            if event.obj_type != obj_type:
                 continue
-            if event.when == "on":
+            if event.listener_type == "on":
                 obj.on(event.name, event.handler)  # type:ignore
-            elif event.when == "once":
+            elif event.listener_type == "once":
                 obj.once(event.name, event.handler)  # type:ignore
             else:
-                raise ValueError(event.when)
+                raise ValueError(event.listener_type)
 
     def __remove(self, obj: Page | BrowserContext, obj_type: Literal["page", "context"]) -> None:
         for event in self._events:
-            if event.exec_on != obj_type:
+            if event.obj_type != obj_type:
                 continue
             obj.remove_listener(event.name, event.handler)
 

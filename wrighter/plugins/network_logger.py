@@ -19,9 +19,7 @@ class NetworkLogger(Plugin):
             response_codes (list[int], optional): A list of HTTP status codes to log. If not provided, all status codes will be logged.
             requests (bool, optional): Whether to log requests. Defaults to `True`.
         """
-        self.response_codes = (
-            response_codes if response_codes is not None else list(range(100, 600))
-        )
+        self.response_codes = response_codes or list(range(100, 600))
         self.requests = requests
         super().__init__()
 

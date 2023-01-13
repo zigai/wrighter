@@ -167,17 +167,17 @@ class WrighterCore:
                 f"Setting user agent to '{ua}'", force_user_agent=self.options.force_user_agent
             )
 
-    def _media_dir(self, folder_name: str) -> str:
+    def internal_dir(self, folder_name: str) -> str:
         """
-        Return the path to the media directory with the specified name.
+        Return the path to the internal directory with the specified name.
         Full path depends on the `data_dir` option in options.
         If the directory does not exist, it is created.
 
         Args:
-            folder_name (str): The name of the folder to store the media files in.
+            folder_name (str): The name of the folder to store the internal files in.
 
         Returns:
-            str: The path to the media directory.
+            str: The path to the internal directory.
         """
 
         directory = str(self.options.data_dir) + SEP + folder_name
@@ -245,7 +245,7 @@ class WrighterCore:
             str: The path to the media directory.
         """
 
-        return self._media_dir("screenshots")
+        return self.internal_dir("screenshots")
 
     @property
     def videos_dir(self) -> str:
@@ -257,7 +257,7 @@ class WrighterCore:
         Returns:
             str: The path to the media directory.
         """
-        return self._media_dir("videos")
+        return self.internal_dir("videos")
 
 
 __all__ = ["WrighterCore"]
