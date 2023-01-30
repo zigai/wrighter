@@ -26,7 +26,7 @@ def page(when: str, event: str):
 
 def context(when: str, event: str):
     def wrapper(f):
-        setattr(f, EVENT_DUNDER, Event(event, "page", when))  # type:ignore
+        setattr(f, EVENT_DUNDER, Event(event, "context", when))  # type:ignore
         return f
 
     return wrapper

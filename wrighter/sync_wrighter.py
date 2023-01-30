@@ -40,7 +40,7 @@ class SyncWrighter(WrighterCore):
             pass
 
     def __start_playwright(self) -> Playwright:
-        self.log.info("Starting Playwright")
+        self.log.debug("Starting Playwright")
         return sync_playwright().start()
 
     def _launch_browser(self) -> Browser | BrowserContext:
@@ -68,7 +68,7 @@ class SyncWrighter(WrighterCore):
         return self.new_context()
 
     def stop(self) -> None:
-        self.log.info("Stopping Playwright")
+        self.log.debug("Stopping Playwright")
         self.context.close()
         self.browser.close()
         self.playwright.stop()

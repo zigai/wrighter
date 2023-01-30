@@ -3,7 +3,6 @@ import random
 from pathlib import Path
 from typing import Any, Mapping
 
-from loguru import logger as log
 from playwright.async_api import (
     Browser,
     BrowserContext,
@@ -84,7 +83,7 @@ class AsyncWrighter(WrighterCore):
         return context
 
     async def stop(self):
-        log.info("Stopping Playwright")
+        self.log.debug("Stopping Playwright")
         await self.context.close()
         await self.browser.close()  # type: ignore
         await self.playwright.stop()  # type: ignore
