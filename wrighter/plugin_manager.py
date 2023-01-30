@@ -1,9 +1,7 @@
-from wrighter.plugin import Plugin, page, context, EVENT_DUNDER
-from playwright.sync_api import (
-    BrowserContext,
-    Page,
-)
-from stdl.str_u import colored, FG
+from playwright.sync_api import BrowserContext, Page
+from stdl.str_u import FG, colored
+
+from wrighter.plugin import EVENT_DUNDER, Plugin, context, page
 
 
 class PluginManager:
