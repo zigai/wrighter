@@ -1,7 +1,7 @@
 from playwright.sync_api import Page, Route
 from stdl.str_u import FG, colored
 
-from wrighter.plugin import Plugin
+from wrighter.plugin import Plugin, context
 
 DEFAULT_RESOURCE_EXCLUSIONS = ["image", "stylesheet", "media", "font", "other"]
 
@@ -37,6 +37,7 @@ class ResourceBlocker(Plugin):
             return route.abort()
         return route.continue_()
 
+    @context("on", "page")
     def context_on_page(self, page: Page) -> None:
         page.route(url=self.url_pattern, handler=self.handler)
 

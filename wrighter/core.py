@@ -10,8 +10,7 @@ from playwright.sync_api import Browser, BrowserContext, BrowserType, Page, Play
 from stdl import fs
 from stdl.fs import SEP
 from stdl.log import br, loguru_formater
-from stdl.str_u import FG, colored
-
+from wrighter.plugin_manager import PluginManager
 from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
 
@@ -30,9 +29,17 @@ class WrighterCore:
         self.context: BrowserContext = ...  # type:ignore
         self.log = log
         self.options = load_wrighter_opts(options)
-        self._plugins: list[Plugin] = []
+        self.plugin_manager = PluginManager(self)
         if plugins:
-            self._plugins.extend(plugins)
+            self.plugin_manager.plugins.extend(plugins)
+
+        self.add_plugin = self.plugin_manager.add_plugin
+        self.remove_plugin = self.plugin_manager.remove_plugin
+        self.remove_all_plugins = self.plugin_manager.remove_all_plugins
+        self._page_apply_plugins = self.plugin_manager.page_apply_plugins
+        self._context_apply_plugins = self.plugin_manager.context_apply_plugins
+        self.get_plugins_by_class = self.plugin_manager.get_plugins_by_class
+        self.print_plugins = self.plugin_manager.print_plugins
 
     def export_storage_state(self) -> None:
 
@@ -45,7 +52,6 @@ class WrighterCore:
         Returns:
             None
         """
-
         for i, ctx in enumerate(self.contexts):
             filename = str(i) + "." + fs.rand_filename("storage_state", "json")
             filepath = str(self.options.data_dir) + SEP + filename
@@ -64,7 +70,6 @@ class WrighterCore:
         Returns:
             None
         """
-
         if path is None:
             path = str(self.options.data_dir) + SEP + fs.rand_filename("wrighter_options", "json")
         self.options.export(path, full=full)
@@ -72,72 +77,6 @@ class WrighterCore:
 
     def print_configuration(self):
         br(), self.options.print(), br(), self.print_plugins(), br()  # type:ignore
-
-    def print_plugins(self):
-        print(colored("Plugins", FG.LIGHT_BLUE) + ":")
-        for plugin in self._plugins:
-            print(f"\t{plugin.description}")
-        if not self._plugins:
-            print("No plugins added.")
-
-    def add_plugin(self, plugin: Plugin, *, existing=True) -> None:
-        """
-        Adds a plugin to the current instance.
-
-        Args:
-            plugin (Plugin): The plugin to add.
-            existing (bool, optional): If `True`, adds the plugin to all existing pages and contexts.
-                Defaults to `True`.
-
-        Returns:
-            None
-        """
-
-        self._plugins.append(plugin)
-        if existing:
-            for page in self.pages:
-                plugin.add_to_page(page)
-            for ctx in self.contexts:
-                plugin.add_to_context(ctx)
-
-    def remove_plugin(self, plugin: Plugin, *, existing=True) -> None:
-        """
-        Remove a plugin from the current instance.
-
-        Args:
-            plugin (Plugin): The plugin to remove.
-            existing (bool, optional): If `True`, remove the plugin from all existing pages and contexts.
-                Defaults to `True`.
-
-        Returns:
-            None
-        """
-        self._plugins.remove(plugin)
-        if existing:
-            for page in self.pages:
-                plugin.remove_from_page(page)
-            for ctx in self.contexts:
-                plugin.remove_from_context(ctx)
-
-    def remove_all_plugins(self, *, existing=True) -> None:
-        """
-        Remove all plugin from the current instance.
-
-        Args:
-            existing (bool, optional): If `True`, alose remove all the plugin all from existing pages and contexts.
-                Defaults to `True`.
-
-        Returns:
-            None
-        """
-        for plugin in self._plugins:
-            self.remove_plugin(plugin, existing=existing)
-        self._plugins.clear()
-
-    def _page_add_plugins(self, page: Page):
-        """Add all plugins to a page"""
-        for plugin in self._plugins:
-            plugin.add_to_page(page)
 
     def get_user_agent(self, browser_name: str) -> str:
         """

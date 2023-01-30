@@ -1,6 +1,6 @@
 from stdl.str_u import BG, FG, ST, colored
 
-from wrighter.plugin import Plugin, Request, Response
+from wrighter.plugin import Plugin, Request, Response, page
 
 HTTP_STATUS_COLORS = {"2": BG.GREEN, "3": BG.BLUE, "4": BG.RED, "5": BG.YELLOW}
 
@@ -34,6 +34,7 @@ class NetworkLogger(Plugin):
         status = colorize_status_code(response.status)
         print(f"{colored('<<', style=ST.BOLD)} {status} | {response.url}")
 
+    @page("on", "request")
     def page_on_request(self, request: Request) -> None:
         if not self.requests:
             return

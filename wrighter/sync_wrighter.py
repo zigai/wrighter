@@ -57,9 +57,8 @@ class SyncWrighter(WrighterCore):
         if self.is_persistent:
             opts = self.options.persistent_context_options
             browser_context = driver.launch_persistent_context(**opts)
-            browser_context.on("page", lambda page: self._page_add_plugins(page))
-            for plugin in self._plugins:
-                plugin.add_to_context(browser_context)
+            browser_context.on("page", lambda page: self.plugin_manager.page_apply_plugins(page))
+            self.plugin_manager.context_apply_plugins(browser_context)
             return browser_context
         return driver.launch(**self.options.browser_launch_options)
 
@@ -86,9 +85,8 @@ class SyncWrighter(WrighterCore):
         if self.is_persistent:
             raise RuntimeError("Cannot create contexts in persistent mode.")
         context = self.browser.new_context(**self.options.context_options)  # type:ignore
-        context.on("page", lambda page: self._page_add_plugins(page))
-        for plugin in self._plugins:
-            plugin.add_to_context(context)
+        context.on("page", lambda page: self.plugin_manager.page_apply_plugins(page))
+        self.plugin_manager.context_apply_plugins(context)
         return context
 
     def sleep(self, lo: float, hi: float | None = None) -> float:

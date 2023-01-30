@@ -56,12 +56,11 @@ class AsyncWrighter(WrighterCore):
         driver = self._get_driver(self.options.browser)
         if self.is_persistent:
             opts = self.options.persistent_context_options
-            browser_context = await driver.launch_persistent_context(**opts)
-            browser_context.on("page", lambda page: self._page_add_plugins(page))
-            for plugin in self._plugins:
-                plugin.add_to_context(browser_context)
+            browser_context = await driver.launch_persistent_context(**opts)  # type:ignore
+            browser_context.on("page", lambda page: self.plugin_manager.page_apply_plugins(page))
+            self.plugin_manager.context_apply_plugins(browser_context)
             return browser_context
-        return await driver.launch(**self.options.browser_launch_options)
+        return await driver.launch(**self.options.browser_launch_options)  # type:ignore
 
     async def __launch_context(self) -> BrowserContext:
         if self.is_persistent:
@@ -80,9 +79,8 @@ class AsyncWrighter(WrighterCore):
         if self.is_persistent:
             raise RuntimeError("Cannot create contexts in persistent mode.")
         context = await self.browser.new_context(**self.options.context_options)  # type:ignore
-        context.on("page", lambda page: self._page_add_plugins(page))
-        for plugin in self._plugins:
-            plugin.add_to_context(context)
+        context.on("page", lambda page: self.plugin_manager.page_apply_plugins(page))
+        self.plugin_manager.context_apply_plugins(context)
         return context
 
     async def stop(self):
