@@ -43,7 +43,7 @@ RESOURCE_TYPES = [
     "other",
 ]
 
-BROWSER_LAUNCH_KEYS = [
+BROWSER_LAUNCH_OPTS_NAMES = [
     "executable_path",
     "channel",
     "args",
@@ -63,7 +63,7 @@ BROWSER_LAUNCH_KEYS = [
     "firefox_user_prefs",
 ]
 
-CONTEXT_KEYS = [
+CONTEXT_OPTS_NAMES = [
     "viewport",
     "screen",
     "no_viewport",

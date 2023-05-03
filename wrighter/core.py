@@ -3,19 +3,21 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping
 
-from loguru import logger as log
+from loguru import logger
 from playwright.async_api import Browser as AsyncBrowser
 from playwright.async_api import BrowserContext as AsyncBrowserContext
 from playwright.sync_api import Browser, BrowserContext, BrowserType, Page, Playwright
 from stdl import fs
 from stdl.fs import SEP
-from stdl.log import br, loguru_formater
-from wrighter.plugin_manager import PluginManager
+from stdl.log import br
+
 from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
+from wrighter.plugin_manager import PluginManager
+from wrighter.util import wrighter_loguru_formater
 
-log.remove()
-LOGGER_ID = log.add(sys.stdout, level="DEBUG", format=loguru_formater)  # type:ignore
+logger.remove()
+LOGGER_ID = logger.add(sys.stdout, level="DEBUG", format=wrighter_loguru_formater)  # type:ignore
 
 
 class WrighterCore:
@@ -27,7 +29,7 @@ class WrighterCore:
         self.playwright: Playwright = ...  # type:ignore
         self.browser: Browser | BrowserContext = ...  # type:ignore
         self.context: BrowserContext = ...  # type:ignore
-        self.log = log
+        self.logger = logger
         self.options = load_wrighter_opts(options)
         self.plugin_manager = PluginManager(self)
         if plugins:
@@ -56,7 +58,7 @@ class WrighterCore:
             filename = str(i) + "." + fs.rand_filename("storage_state", "json")
             filepath = str(self.options.data_dir) + SEP + filename
             ctx.storage_state(path=filepath)
-            self.log.info(f"Context {i} saved", path=filepath)
+            self.logger.info(f"Context {i} saved", path=filepath)
 
     def export_options(self, path: str | Path | None = None, *, full=False) -> None:
         """
@@ -73,7 +75,7 @@ class WrighterCore:
         if path is None:
             path = str(self.options.data_dir) + SEP + fs.rand_filename("wrighter_options", "json")
         self.options.export(path, full=full)
-        self.log.info(f"{self.options.__class__.__name__} exported", path=path)
+        self.logger.info(f"{self.options.__class__.__name__} exported", path=path)
 
     def print_configuration(self):
         br(), self.options.print(), br(), self.print_plugins(), br()  # type:ignore
@@ -102,7 +104,7 @@ class WrighterCore:
         if self.options.user_agent is None and self.options.force_user_agent:
             ua = self.get_user_agent(self.options.browser)
             self.options.user_agent = ua
-            self.log.info(
+            self.logger.info(
                 f"Setting user agent to '{ua}'", force_user_agent=self.options.force_user_agent
             )
 

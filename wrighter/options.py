@@ -112,7 +112,7 @@ class WrighterOptions(BaseOptions):
         These options are documented at:
         https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
         """
-        return {k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS}
+        return {k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_OPTS_NAMES}
 
     @property
     def context_options(self) -> dict[str, Any]:
@@ -121,7 +121,7 @@ class WrighterOptions(BaseOptions):
         These options are documented at:
         https://playwright.dev/python/docs/api/class-browser#browser-new-context
         """
-        return {k: v for k, v in self.dict().items() if k in CONTEXT_KEYS}
+        return {k: v for k, v in self.dict().items() if k in CONTEXT_OPTS_NAMES}
 
     @property
     def persistent_context_options(self) -> dict[str, Any]:
@@ -131,7 +131,9 @@ class WrighterOptions(BaseOptions):
         https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch-persistent-context
         """
         opts = {
-            k: v for k, v in self.dict().items() if k in BROWSER_LAUNCH_KEYS or k in CONTEXT_KEYS
+            k: v
+            for k, v in self.dict().items()
+            if k in BROWSER_LAUNCH_OPTS_NAMES or k in CONTEXT_OPTS_NAMES
         }
         if "storage_state" in opts.keys():
             log.warning(

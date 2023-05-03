@@ -83,7 +83,7 @@ class AsyncWrighter(WrighterCore):
         return context
 
     async def stop(self):
-        self.log.debug("Stopping Playwright")
+        self.logger.debug("Stopping Playwright")
         await self.context.close()
         await self.browser.close()  # type: ignore
         await self.playwright.stop()  # type: ignore
@@ -111,12 +111,12 @@ class AsyncWrighter(WrighterCore):
 
         if hi is None:
             await asyncio.sleep(lo)
-            self.log.info(f"Sleeping for {round(lo,2)}s")
+            self.logger.info(f"Sleeping for {round(lo,2)}s")
             return lo
         if lo > hi:
             raise ValueError(f"Minimum sleep time is higher that maximum. {(lo,hi)}")
         t = random.uniform(lo, hi)
-        self.log.info(f"Sleeping for {round(t,2)}s")
+        self.logger.info(f"Sleeping for {round(t,2)}s")
         await asyncio.sleep(t)
         return t
 

@@ -40,7 +40,7 @@ class SyncWrighter(WrighterCore):
             pass
 
     def __start_playwright(self) -> Playwright:
-        self.log.debug("Starting Playwright")
+        self.logger.debug("Starting Playwright")
         return sync_playwright().start()
 
     def _launch_browser(self) -> Browser | BrowserContext:
@@ -68,7 +68,7 @@ class SyncWrighter(WrighterCore):
         return self.new_context()
 
     def stop(self) -> None:
-        self.log.debug("Stopping Playwright")
+        self.logger.debug("Stopping Playwright")
         self.context.close()
         self.browser.close()
         self.playwright.stop()
@@ -106,12 +106,12 @@ class SyncWrighter(WrighterCore):
 
         if hi is None:
             time.sleep(lo)
-            self.log.info(f"Sleeping for {round(lo,2)}s")
+            self.logger.info(f"Sleeping for {round(lo,2)}s")
             return lo
         if lo > hi:
             raise ValueError(f"Minimum sleep time is higher that maximum. {(lo,hi)}")
         t = random.uniform(lo, hi)
-        self.log.info(f"Sleeping for {round(t,2)}s")
+        self.logger.info(f"Sleeping for {round(t,2)}s")
         time.sleep(t)
         return t
 
