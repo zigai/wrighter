@@ -3,7 +3,9 @@ from typing import Callable, Literal
 
 from playwright.sync_api import BrowserContext, Page, Request, Response
 
-EVENT_DUNDER = "__event__"
+from wrighter.core import logger
+
+EVENT_DUNDER_NAME = "__event__"
 
 
 @dataclass(frozen=True)
@@ -17,26 +19,43 @@ class Event:
 
 
 def page(when: str, event: str):
+    """
+    Decorator for page events
+
+    Args:
+        when (str): When to fire the event. Can be "on" or "once"
+        event (str): The event name. See https://playwright.dev/python/docs/api/class-page#page-on-request
+    """
+
     def wrapper(f):
-        setattr(f, EVENT_DUNDER, Event(event, "page", when))  # type:ignore
+        setattr(f, EVENT_DUNDER_NAME, Event(event, "page", when))  # type:ignore
         return f
 
     return wrapper
 
 
 def context(when: str, event: str):
+    """
+    Decorator for context events
+
+    Args:
+        when (str): When to fire the event. Can be "on" or "once"
+        event (str): The event name. See https://playwright.dev/python/docs/api/class-browsercontext#browsercontext-on-request
+    """
+
     def wrapper(f):
-        setattr(f, EVENT_DUNDER, Event(event, "context", when))  # type:ignore
+        setattr(f, EVENT_DUNDER_NAME, Event(event, "context", when))  # type:ignore
         return f
 
     return wrapper
 
 
 class Plugin:
-    """Base class for plugins"""
+    """Base class for Wrighter Plugins"""
 
     def __init__(self) -> None:
         self._description = self.__class__.__doc__
+        self.logger = logger.bind(plugin=self.__class__.__name__)
         if not self._description:
             self._description = "No description"
 
@@ -66,15 +85,15 @@ class Plugin:
 
     @property
     def events(self) -> list[(tuple[Event, Callable])]:
-        all_events = []
+        events = []
         for method_name in dir(self):
             if method_name == "events":
                 continue
             method = getattr(self, method_name)
-            if not hasattr(method, EVENT_DUNDER):
+            if not hasattr(method, EVENT_DUNDER_NAME):
                 continue
-            all_events.append((getattr(method, EVENT_DUNDER), method))
-        return all_events
+            events.append((getattr(method, EVENT_DUNDER_NAME), method))
+        return events
 
     """
     @property
