@@ -8,7 +8,6 @@ def wrighter_loguru_formater(record: dict) -> str:
     name = color_tag("{name}", "light-blue")
     func = color_tag("{function}", "light-blue")
     lineno = color_tag("{line}", "light-blue")
-    plugin = color_tag("{plugin}", "green-blue")
 
     extras = ""
     if len(record["extra"]):
@@ -19,7 +18,8 @@ def wrighter_loguru_formater(record: dict) -> str:
         extras = extras[:-2]
 
     if "plugin" in record["extra"]:
-        fmt = f"{time} [ {level} ] [ {plugin} ] {name}:{func}:{lineno} - {msg} {extras}\n"
+        plugin_tag = color_tag("{extra[plugin]}", "green")
+        fmt = f"{time} [ {level} ] [ {plugin_tag} ] {name}:{func}:{lineno} - {msg} {extras}\n"
     else:
         fmt = f"{time} [ {level} ] {name}:{func}:{lineno} - {msg} {extras}\n"
     return fmt
