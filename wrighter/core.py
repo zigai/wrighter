@@ -32,19 +32,19 @@ class WrighterCore:
         self.logger = logger
         self.options = load_wrighter_opts(options)
         self.plugin_manager = PluginManager(self)
+
         if plugins:
             self.plugin_manager.plugins.extend(plugins)
 
         self.add_plugin = self.plugin_manager.add_plugin
         self.remove_plugin = self.plugin_manager.remove_plugin
-        self.remove_all_plugins = self.plugin_manager.remove_all_plugins
+        self.remove_all_plugins = self.plugin_manager.remove_all
         self._page_apply_plugins = self.plugin_manager.page_apply_plugins
         self._context_apply_plugins = self.plugin_manager.context_apply_plugins
         self.get_plugins_by_class = self.plugin_manager.get_plugins_by_class
         self.print_plugins = self.plugin_manager.print_plugins
 
     def export_storage_state(self) -> None:
-
         """
         Exports the storage state for all contexts.
 

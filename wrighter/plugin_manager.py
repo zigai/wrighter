@@ -47,7 +47,7 @@ class PluginManager:
             for ctx in self.wrighter.contexts:
                 plugin.remove_from_context(ctx)
 
-    def remove_all_plugins(self, *, existing=True) -> None:
+    def remove_all(self, *, existing=True) -> None:
         """
         Remove all plugin from the current instance.
 
@@ -73,11 +73,7 @@ class PluginManager:
             plugin.add_to_context(ctx)
 
     def get_plugins_by_class(self, cls: Plugin) -> list[Plugin]:
-        plugins = []
-        for i in self.plugins:
-            if isinstance(i, cls):  # type:ignore
-                plugins.append(i)
-        return plugins
+        return [i for i in self.plugins if isinstance(i, cls)]  # type:ignore
 
     def print_plugins(self):
         print(colored("Plugins", FG.LIGHT_BLUE) + ":")
