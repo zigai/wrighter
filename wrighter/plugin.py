@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Literal
 
-from playwright.sync_api import BrowserContext, Page, Request, Response
+from playwright.sync_api import BrowserContext, Page
 
 from wrighter.core import logger
 

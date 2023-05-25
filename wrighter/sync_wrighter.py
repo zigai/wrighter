@@ -1,3 +1,4 @@
+# noqa: F401
 import random
 import time
 from pathlib import Path
@@ -36,7 +37,7 @@ class SyncWrighter(WrighterCore):
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             self.stop()
-        except Exception as e:
+        except Exception:
             pass
 
     def __start_playwright(self) -> Playwright:

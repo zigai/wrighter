@@ -15,7 +15,7 @@ from pydantic import BaseModel, validator
 from stdl import fs
 from stdl.str_u import FG, colored
 
-from wrighter.constants import *
+from wrighter.constants import BROWSER_LAUNCH_OPTS_NAMES, BROWSERS, CONTEXT_OPTS_NAMES, PERMISSIONS
 
 
 class BaseOptions(BaseModel):
@@ -47,7 +47,6 @@ class BaseOptions(BaseModel):
 
 
 class WrighterOptions(BaseOptions):
-
     data_dir: str | Path = os.path.abspath(os.getcwd())
     browser: str = "chromium"
     user_data_dir: str | Path | None = None

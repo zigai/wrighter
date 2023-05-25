@@ -91,7 +91,7 @@ class AsyncWrighter(WrighterCore):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             await self.stop()
-        except Exception as e:
+        except Exception:
             pass
 
     async def sleep(self, lo: float, hi: float | None = None) -> float:
