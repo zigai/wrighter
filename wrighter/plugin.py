@@ -10,12 +10,12 @@ EVENT_DUNDER_NAME = "__event__"
 
 @dataclass(frozen=True)
 class Event:
-    event: str
+    name: str
     event_type: Literal["page", "context"]
     when: Literal["on", "once"]
 
     def __repr__(self) -> str:
-        return f"{self.event}<{self.event_type}.{self.when}('{self.event}', handler)>"
+        return f"{self.name}<{self.event_type}.{self.when}('{self.name}', handler)>"
 
 
 def page(when: str, event: str):
@@ -71,9 +71,9 @@ class Plugin:
             if event.event_type != event_type:
                 continue
             if event.when == "on":
-                obj.on(event.event, handler)  # type:ignore
+                obj.on(event.name, handler)  # type:ignore
             elif event.when == "once":
-                obj.once(event.event, handler)  # type:ignore
+                obj.once(event.name, handler)  # type:ignore
             else:
                 raise ValueError(event.when)
 
@@ -81,7 +81,7 @@ class Plugin:
         for event, handler in self.events:
             if event.event_type != obj_type:
                 continue
-            obj.remove_listener(event.event, handler)
+            obj.remove_listener(event.name, handler)
 
     @property
     def events(self) -> list[(tuple[Event, Callable])]:

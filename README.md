@@ -6,9 +6,12 @@
 [![license](https://img.shields.io/github/license/zigai/wrighter.svg)](https://github.com/zigai/wrighter/blob/main/LICENSE)
 
 Web scraping/browser automation framework built on [Playwright](https://playwright.dev/python/).
+
 # Features
 - sync and async API
-- plugin system
+- plugin system [(see official plugins)](https://github.com/zigai/wrighter-plugins)
+- configuration validation base on pydantic
+
 # Installation
 #### From PyPi
 ```
@@ -18,5 +21,6 @@ pip install wrighter
 ```
 pip install git+https://github.com/zigai/wrighter.git
 ```
+
 # License
 [MIT License](https://github.com/zigai/wrighter/blob/master/LICENSE)
