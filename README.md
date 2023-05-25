@@ -10,7 +10,7 @@ Web scraping/browser automation framework built on [Playwright](https://playwrig
 # Features
 - sync and async API
 - plugin system [(see official plugins)](https://github.com/zigai/wrighter-plugins)
-- configuration validation base on pydantic
+- configuration validation based on pydantic
 
 # Installation
 #### From PyPi
