@@ -9,15 +9,14 @@ from playwright.async_api import BrowserContext as AsyncBrowserContext
 from playwright.sync_api import Browser, BrowserContext, BrowserType, Page, Playwright
 from stdl import fs
 from stdl.fs import SEP
-from stdl.log import br
+from stdl.log import br, loguru_formater
 
 from wrighter.options import WrighterOptions, load_wrighter_opts
 from wrighter.plugin import Plugin
 from wrighter.plugin_manager import PluginManager
-from wrighter.util import wrighter_loguru_formater
 
 logger.remove()
-LOGGER_ID = logger.add(sys.stdout, level="DEBUG", format=wrighter_loguru_formater)  # type:ignore
+LOGGER_ID = logger.add(sys.stdout, level="DEBUG", format=loguru_formater)  # type:ignore
 
 
 class WrighterCore:

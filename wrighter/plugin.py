@@ -55,7 +55,7 @@ class Plugin:
 
     def __init__(self) -> None:
         self._description = self.__class__.__doc__
-        self.logger = logger.bind(plugin=self.__class__.__name__)
+        self.logger = logger.bind(title=self.__class__.__name__)
         if not self._description:
             self._description = "No description"
 
