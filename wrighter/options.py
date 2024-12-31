@@ -13,7 +13,7 @@ from playwright._impl._api_structures import (
 )
 from pydantic import BaseModel, validator
 from stdl import fs
-from stdl.str_u import FG, colored
+from stdl.st import FG, colored
 
 from wrighter.constants import BROWSER_LAUNCH_OPTS_NAMES, BROWSERS, CONTEXT_OPTS_NAMES, PERMISSIONS
 
@@ -36,8 +36,8 @@ class BaseOptions(BaseModel):
         """
         excl_unset = not full
         excl_defaults = not full
-        json_opts = self.json(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
-        fs.json_dump(data=json.loads(json_opts), path=path)
+        data = self.model_dump(exclude_unset=excl_unset, exclude_defaults=excl_defaults)
+        fs.json_dump(data, path=path)
 
     def print(self, *, full=False):
         print(colored(self.__class__.__name__, color=FG.LIGHT_BLUE) + ":")
@@ -178,7 +178,7 @@ class WrighterOptions(BaseOptions):
         "storage_state",
     )
     def __validate_path(cls, v):
-        fs.assert_paths_exist(v)
+        fs.ensure_paths_exist(v)
         return os.path.abspath(str(v))
 
 

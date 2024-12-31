@@ -1,5 +1,5 @@
 from playwright.sync_api import BrowserContext, Page
-from stdl.str_u import FG, colored
+from stdl.st import FG, colored
 
 from wrighter.plugin import Plugin
 
