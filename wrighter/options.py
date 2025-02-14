@@ -154,7 +154,7 @@ class WrighterOptions(BaseOptions):
 
     @field_validator("permissions", mode="before")
     @classmethod
-    def validate_permissions(cls, v: T.Any) -> T.Any:
+    def validate_permissions(cls, v: Any) -> Any:
         if isinstance(v, str):
             v = v.lower()
             if v not in PERMISSIONS:
