@@ -54,10 +54,8 @@ class Plugin:
     """Base class for Wrighter Plugins"""
 
     def __init__(self) -> None:
-        self._description = self.__class__.__doc__
+        self._description = self.__class__.__doc__ or "No description"
         self.logger = logger.bind(title=self.__class__.__name__)
-        if not self._description:
-            self._description = "No description"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"
