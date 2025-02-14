@@ -15,8 +15,7 @@ class PluginManager:
 
         Args:
             plugin (Plugin): The plugin to add.
-            existing (bool, optional): If `True`, adds the plugin to all existing pages and contexts.
-                Defaults to `True`.
+            existing (bool, optional): If `True`, adds the plugin to all existing pages and contexts. Defaults to `True`.
 
         Returns:
             None
@@ -34,8 +33,7 @@ class PluginManager:
 
         Args:
             plugin (Plugin): The plugin to remove.
-            existing (bool, optional): If `True`, remove the plugin from all existing pages and contexts.
-                Defaults to `True`.
+            existing (bool, optional): If `True`, remove the plugin from all existing pages and contexts. Defaults to `True`.
 
         Returns:
             None
@@ -52,8 +50,7 @@ class PluginManager:
         Remove all plugin from the current instance.
 
         Args:
-            existing (bool, optional): If `True`, alose remove all the plugin all from existing pages and contexts.
-                Defaults to `True`.
+            existing (bool, optional): If `True`, alose remove all the plugin all from existing pages and contexts. Defaults to `True`.
 
         Returns:
             None

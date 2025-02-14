@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 from typing import Any, Literal, Mapping
@@ -11,7 +10,7 @@ from playwright._impl._api_structures import (
     StorageState,
     ViewportSize,
 )
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from stdl import fs
 from stdl.st import FG, colored
 
@@ -143,8 +142,9 @@ class WrighterOptions(BaseOptions):
         opts["user_data_dir"] = self.user_data_dir
         return opts
 
-    @validator("browser")
-    def __validate_browser(cls, v: str):
+    @field_validator("browser")
+    @classmethod
+    def validate_browser(cls, v: str) -> str:
         v = v.lower().strip()
         if v == "chrome":
             v = "chromium"
@@ -152,22 +152,24 @@ class WrighterOptions(BaseOptions):
             raise ValueError(f"Possible values for 'browser' are {BROWSERS}")
         return v
 
-    @validator("permissions", each_item=True)
-    def __validate_permissions(cls, v):
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def validate_permissions(cls, v: T.Any) -> T.Any:
         if isinstance(v, str):
             v = v.lower()
             if v not in PERMISSIONS:
                 raise ValueError(v)
         return v
 
-    @validator("viewport", "screen", "record_video_size")
-    def __validate_viewport_size(cls, v: ViewportSize):
+    @field_validator("viewport", "screen", "record_video_size")
+    @classmethod
+    def validate_viewport_size(cls, v: dict[str, int]) -> dict[str, int]:
         MIN_VIEWPORT_SIZE = 100
         if v["width"] < MIN_VIEWPORT_SIZE or v["height"] < MIN_VIEWPORT_SIZE:
             raise ValueError(v)
         return v
 
-    @validator(
+    @field_validator(
         "user_data_dir",
         "data_dir",
         "executable_path",
@@ -177,7 +179,8 @@ class WrighterOptions(BaseOptions):
         "record_video_dir",
         "storage_state",
     )
-    def __validate_path(cls, v):
+    @classmethod
+    def validate_path(cls, v: Path) -> str:
         fs.ensure_paths_exist(v)
         return os.path.abspath(str(v))
 

@@ -1,17 +1,17 @@
 [project]
 name = "wrighter"
-version = "0.1.2"
-description = "eb scraping/browser automation framework built on Playwright"
+version = "0.1.3"
+description = "Web scraping/browser automation framework built on Playwright"
 authors = [{ name = "Žiga Ivanšek", email = "ziga.ivansek@gmail.com" }]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
 requires-python = ">=3.10"
 
 dependencies = [
-    "playwright>=1.33.0",
-    "pydantic>=1.10.8",
-    "playwright_stealth>=1.0.5",
-    "stdl>=0.5.5",
+    "playwright>=1.50.0",
+    "pydantic>=2.10.6",
+    "playwright-stealth @ git+https://github.com/Mattwmaster58/playwright_stealth@rc4",
+    "stdl>=0.6.1",
     "loguru>=0.7.0",
 ]
 
